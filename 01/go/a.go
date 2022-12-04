@@ -7,11 +7,7 @@ import (
 	"strings"
 )
 
-func main() {
-	if len(os.Args) == 1 {
-		panic("Need a filename argument")
-	}
-	filename := os.Args[1]
+func partA(filename string) {
 	byteContents, err := os.ReadFile(filename)
 	contents := string(byteContents)
 	if err != nil {
