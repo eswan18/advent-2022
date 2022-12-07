@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from functools import reduce
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,6 +27,19 @@ class Dir:
         for x in files_and_dirs:
             s += x.tree(indent=indent+2)
         return s
+    
+    @property
+    def size(self) -> int:
+        files_and_dirs = [*self.files, *self.dirs.values()]
+        sizes = map(lambda x: x.size, files_and_dirs)
+        return sum(sizes)
+    
+    def child_dirs_and_self(self) -> list[Dir]:
+        result = [self]
+        for d in self.dirs.values():
+            result.extend(d.child_dirs_and_self())
+        return result
+
 
 
 filename = sys.argv[1]
@@ -44,9 +58,6 @@ while i < len(lines):
     if not line.startswith('$ '):
         print('oh no....')
         break
-    if current_dir and logging:
-        print("\nTree: ")
-        print(root_dir.tree())
 
     command = line.split()[1]
 
@@ -86,11 +97,16 @@ while i < len(lines):
                 print(f'Creating new file "{newfile}" in "{current_dir.name}"')
                 current_dir.files.append(newfile)
                 i += 1
-        if logging:
-            print("\nNew tree")
-            print(root_dir.tree())
-    
+
     else:
         raise RuntimeError('wtf')
 
+print('Final tree')
 print(root_dir.tree())
+
+all_dirs = root_dir.child_dirs_and_self()
+running_size = 0
+for d in all_dirs:
+    if d.size <= 100000:
+        running_size += d.size
+print(running_size)
