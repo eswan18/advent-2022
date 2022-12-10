@@ -19,7 +19,7 @@ I may eventually come back and do them in other languages.
 |   7 |     ** |      |
 |   8 |     ** |      |
 |   9 |     ** |      |
-|  10 |        |      |
+|  10 |     ** |      |
 |  11 |        |      |
 |  12 |        |      |
 |  13 |        |      |
