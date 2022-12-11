@@ -1,9 +1,29 @@
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 from enum import Enum
-from math import floor
+from math import floor, sqrt
+from functools import cache
+from pprint import pprint
+
+@cache
+def factor(x: int) -> list[int]:
+    if x == 1:
+        return [1]
+    # Check all possible factors.
+    for i in range(2, floor(sqrt(x))+1):
+        quotient, remainder = divmod(x, i)
+        if remainder == 0:
+            return [i] + factor(quotient)
+    # If we got here, we found no factors.
+    return [x]
+
+
+nums = 54, 65, 74
+for num in nums:
+    print(num)
+    print(factor(num))
+
 
 class OperationType(Enum):
     addition = 1
@@ -19,11 +39,7 @@ class Item:
     @classmethod
     def from_string(cls, s: str) -> 'Item':
         i = int(s)
-        factors = set()
-        for factor in range(2, floor(i ** 0.5) + 1):
-            if (i % factor) == 0:
-                factors.add(factor)
-        return cls(i, factors)
+        return cls(i, set(factor(i)))
 
 
 @dataclass
@@ -52,7 +68,8 @@ class Monkey:
                 item.priority = item.priority * item.priority
             case OperationType.addition:
                 item.priority = item.priority + self.operation_args[0]
-                item.factors = set()  # Todo -- actually compute new factors
+                # Recompute factors
+                item.factors = set(factor(item.priority))
             case OperationType.multiplication:
                 for multiplier in self.operation_args:
                     item.priority = item.priority * multiplier
@@ -61,8 +78,10 @@ class Monkey:
                 raise RuntimeError('Unexpected operation type')
 
         item.priority = item.priority // 3
+        item.factors = set(factor(item.priority))
 
-        if (item.priority % self.divisor) == 0:
+        if self.divisor in item.factors:
+        #if (item.priority % self.divisor) == 0:
             return (item, self.on_true)
         else:
             return (item, self.on_false)
@@ -87,7 +106,7 @@ class Monkey:
             case ['old', '*', multiplier]:
                 m = int(multiplier)
                 operation_type = OperationType.multiplication
-                args = (m,)
+                args = tuple(factor(m))
             case _:
                 raise RuntimeError('unexpected input')
 
@@ -100,6 +119,7 @@ class Monkey:
 filename = sys.argv[1]
 sections = Path(filename).read_text().strip().split('\n\n')
 monkeys = [Monkey.from_section(section) for section in sections]
+pprint(monkeys)
 
 N_ROUNDS = 20
 for i in range(N_ROUNDS):
