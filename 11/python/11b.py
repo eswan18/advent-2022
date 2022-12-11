@@ -3,26 +3,42 @@ from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum
 from math import floor, sqrt
-from functools import cache
+from functools import cache, reduce
 from pprint import pprint
 
+factors_to_check: list[int] = []
+
+# @cache
+# def simplify(p: int) -> int:
+#     prod = reduce(lambda x, y: x * y, factors_to_check, 1)
+#     print(prod)
+#     remainder = 0
+#     quotient, remainder = divmod(p, prod)
+#     while remainder == 0:
+#         p = quotient
+#         quotient, remainder = divmod(p, prod)
+#     return p
+
 @cache
-def factor(x: int) -> list[int]:
-    if x == 1:
-        return [1]
-    # Check all possible factors.
-    for i in range(2, floor(sqrt(x))+1):
+def true_factor(x: int) -> tuple[int]:
+    for i in range(2, floor(sqrt(x)) + 1):
         quotient, remainder = divmod(x, i)
         if remainder == 0:
-            return [i] + factor(quotient)
+            return (i,) + true_factor(quotient)
     # If we got here, we found no factors.
-    return [x]
+    return (x,)
 
 
-nums = 54, 65, 74
-for num in nums:
-    print(num)
-    print(factor(num))
+    
+@cache
+def factor(x: int) -> set[int]:
+    # Check all relevant factors.
+    for i in factors_to_check:
+        quotient, remainder = divmod(x, i)
+        if remainder == 0:
+            return {i}.union(factor(quotient))
+    # If we got here, we found no factors.
+    return set()
 
 
 class OperationType(Enum):
@@ -36,10 +52,19 @@ class Item:
     priority: int
     factors: set[int]
 
+    def __post_init__(self):
+        if not hasattr(self.__class__, 'instances'):
+            self.__class__.instances = []
+        self.__class__.instances.append(self)
+
+    def update_factors(self):
+        self.factors = factor(self.priority)
+
     @classmethod
     def from_string(cls, s: str) -> 'Item':
         i = int(s)
-        return cls(i, set(factor(i)))
+        # It's key that we don't call factor yet because results get cached.
+        return cls(i, {})
 
 
 @dataclass
@@ -66,22 +91,23 @@ class Monkey:
         match self.operation_type:
             case OperationType.square:
                 item.priority = item.priority * item.priority
+                # No need to update factors; squaring doesn't change anything.
             case OperationType.addition:
                 item.priority = item.priority + self.operation_args[0]
                 # Recompute factors
-                item.factors = set(factor(item.priority))
+                # Basically all of the time is spent here.
+                item.factors = factor(item.priority)
             case OperationType.multiplication:
                 for multiplier in self.operation_args:
                     item.priority = item.priority * multiplier
                     item.factors.add(multiplier)
             case _:
                 raise RuntimeError('Unexpected operation type')
-
-        item.priority = item.priority // 3
-        item.factors = set(factor(item.priority))
+        # Try to simplify the number
+        # I don't think this actually works.
+        # item.priority = simplify(item.priority)
 
         if self.divisor in item.factors:
-        #if (item.priority % self.divisor) == 0:
             return (item, self.on_true)
         else:
             return (item, self.on_false)
@@ -106,11 +132,12 @@ class Monkey:
             case ['old', '*', multiplier]:
                 m = int(multiplier)
                 operation_type = OperationType.multiplication
-                args = tuple(factor(m))
+                args = tuple(true_factor(m))
             case _:
                 raise RuntimeError('unexpected input')
 
         divisor = int(lines[3].split(' divisible by ')[1])
+        factors_to_check.append(divisor)
         on_true = int(lines[4].split(' ')[-1])
         on_false = int(lines[5].split(' ')[-1])
         return cls(number, items, operation_type, args, divisor, on_true, on_false)
@@ -119,12 +146,16 @@ class Monkey:
 filename = sys.argv[1]
 sections = Path(filename).read_text().strip().split('\n\n')
 monkeys = [Monkey.from_section(section) for section in sections]
-pprint(monkeys)
+# The items initially computed their factors before we saw all divisors; do it again.
+print(factors_to_check)
+for item in Item.instances:
+    item.update_factors()
 
-N_ROUNDS = 20
+N_ROUNDS = 1000
 for i in range(N_ROUNDS):
-    if i % 100 == 0:
+    if i in (1, 20, 100, 250, 500, 600, 700, 800, 900, 1000):
         print(f'Round {i}')
+        print([m._inspections for m in monkeys])
     for monkey in monkeys:
         to_move = monkey.inspect_items()
         for item, recipient in to_move:
