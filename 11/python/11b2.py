@@ -3,14 +3,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from functools import reduce
 from operator import xor
+from collections import defaultdict
+from pprint import pprint
 
 current_id = 0
 items: list['Item'] = []
 
 class Item:
-    def __init__(self, priority: int):
+    def __init__(self, priority: int, owner: int | None = None):
         global current_id
         self.priority = priority
+        self.owner = owner
         self.id = current_id
         current_id += 1
         items.append(self)
@@ -57,7 +60,6 @@ class Monkey:
         item = self.items.pop(0)
 
         item.priority = eval(self.operation, {'old': item.priority})
-        item.priority = item.priority // 3
 
         if (item.priority % self.divisor) == 0:
             return (item, self.on_true)
@@ -83,30 +85,23 @@ filename = sys.argv[1]
 sections = Path(filename).read_text().strip().split('\n\n')
 monkeys = [Monkey.from_section(section) for section in sections]
 
-N_ROUNDS = 600
+N_ROUNDS = 70
 states: dict[int, State] = {}
+item_paths = defaultdict(list)
 for i in range(N_ROUNDS):
     for monkey in monkeys:
         to_move = monkey.inspect_items()
         for item, recipient in to_move:
             monkeys[recipient].items.append(item)
-    # Record the state of who holds which items.
-    state = State(
-        {
-            monkey.number: tuple(sorted(item.id for item in monkey.items))
-            for monkey in monkeys
-        },
-        tuple(m._inspections for m in monkeys),
-    )
-    # print(state.owners_and_items)
-    if hash(state) in states:
-        ...
-        # print("We've seen this before!")
-    if hash(state) == 1679267220673506760:
-        print(i)
+            item.owner = recipient
+    # Where are items right now?
+    for item in items:
+        item_paths[item.id].append(item.owner)
 
-    states[hash(state)] = state
 
+for number, path in item_paths.items():
+    print(number)
+    print(','.join(str(owner) for owner in path))
 
 counts = [m._inspections for m in monkeys]
 counts = sorted(counts)
