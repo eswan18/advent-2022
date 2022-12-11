@@ -10,6 +10,25 @@ class Monkey:
     divisor: int  # The number to divide by as part of our "test"
     on_true: int  # What number monkey to throw an item to if the test is true.
     on_false: int  # What number monkey to throw an item to if the test is false.
+    _inspections: int = 0  # How many items has this monkey inspected?
+
+    def inspect_items(self) -> list[tuple[int, int]]:
+        to_move = []
+        while len(self.items) > 0:
+            to_move.append(self.inspect_first())
+        return to_move
+
+    def inspect_first(self) -> tuple[int, int]:
+        self._inspections += 1
+        item = self.items.pop(0)
+
+        item = eval(self.operation, {'old': item})
+        item = item // 3
+
+        if (item % self.divisor) == 0:
+            return (item, self.on_true)
+        else:
+            return (item, self.on_false)
 
 
     @classmethod
@@ -29,4 +48,16 @@ class Monkey:
 filename = sys.argv[1]
 sections = Path(filename).read_text().strip().split('\n\n')
 monkeys = [Monkey.from_section(section) for section in sections]
-print(monkeys)
+
+N_ROUNDS = 20
+for i in range(N_ROUNDS):
+    for monkey in monkeys:
+        to_move = monkey.inspect_items()
+        for item, recipient in to_move:
+            monkeys[recipient].items.append(item)
+
+counts = [m._inspections for m in monkeys]
+counts = sorted(counts)
+
+second_highest, highest = counts[-2:]
+print(second_highest * highest)
