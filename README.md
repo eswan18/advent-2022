@@ -11,7 +11,7 @@ I may eventually come back and do them in other languages.
 | Day | Python |   Go |
 | --- | ------ | ---- |
 |   1 |     ** |   ** |
-|   2 |     ** |      |
+|   2 |     ** |   *  |
 |   3 |     ** |      |
 |   4 |     ** |      |
 |   5 |     ** |      |
