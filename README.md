@@ -10,7 +10,7 @@ I may eventually come back and do them in other languages.
 
 | Day | Python |   Go | Rust |
 | --- | ------ | ---- | ---- |
-|   1 |     ** |   ** |    * |
+|   1 |     ** |   ** |   ** |
 |   2 |     ** |   ** |      |
 |   3 |     ** |      |      |
 |   4 |     ** |      |      |

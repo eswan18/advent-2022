@@ -6,11 +6,13 @@ use std::io::{self, BufRead};
 fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len() != 2 {
-        println!("Provide just one argument: the input file");
+    if args.len() != 3 {
+        println!("Usage: {} <a> <input_file>", args[0]);
+        println!("Where <a> is either 'a' or 'b', and <input_file> is the input file");
         std::process::exit(1);
     }
-    let filename = &args[1];
+    let part = &args[1];
+    let filename = &args[2];
     println!("Reading from file: {}", filename);
 
     // Open the file
@@ -45,8 +47,16 @@ fn main() -> io::Result<()> {
     });
 
     // Get the maximum sum
-    let max_sum = sums.iter().max().unwrap();
-    println!("The maximum sum is: {}", max_sum);
+    if part == "a" {
+        let max_sum = sums.iter().max().unwrap();
+        println!("The maximum sum is: {}", max_sum);
+    } else {
+        // Find the top 3 sums
+        sums.sort();
+        sums.reverse();
+        let total: i32 = sums[0..3].iter().sum();
+        println!("The total of the top 3 sums is: {}", total);
+    }
 
     Ok(())
 }
