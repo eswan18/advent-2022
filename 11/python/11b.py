@@ -28,17 +28,17 @@ def true_factor(x: int) -> tuple[int]:
     # If we got here, we found no factors.
     return (x,)
 
-
-    
 @cache
-def factor(x: int) -> set[int]:
+def factor(x: int, skip: frozenset[int] = frozenset()) -> set[int]:
     # Check all relevant factors.
     for i in factors_to_check:
+        if i in skip:
+            continue
         quotient, remainder = divmod(x, i)
         if remainder == 0:
-            return {i}.union(factor(quotient))
+            return frozenset({i}).union(factor(quotient))
     # If we got here, we found no factors.
-    return set()
+    return frozenset()
 
 
 class OperationType(Enum):
@@ -58,12 +58,13 @@ class Item:
         self.__class__.instances.append(self)
 
     def update_factors(self):
-        self.factors = factor(self.priority)
+        self.factors = set(factor(self.priority))
 
     @classmethod
     def from_string(cls, s: str) -> 'Item':
         i = int(s)
-        # It's key that we don't call factor yet because results get cached.
+        # It's key that we don't call factor yet because the factors-to-check aren't
+        # ready yet, and results get cached.
         return cls(i, {})
 
 
@@ -77,6 +78,10 @@ class Monkey:
     on_true: int  # What number monkey to throw an item to if the test is true.
     on_false: int  # What number monkey to throw an item to if the test is false.
     _inspections: int = 0  # How many items has this monkey inspected?
+
+    def __post_init__(self):
+        if self.operation_type == OperationType.addition:
+            self._add_factors = true_factor(self.operation_args[0])
 
     def inspect_items(self) -> list[tuple[Item, int]]:
         to_move = []
@@ -95,8 +100,11 @@ class Monkey:
             case OperationType.addition:
                 item.priority = item.priority + self.operation_args[0]
                 # Recompute factors
+                old_factors = item.factors
+                # None of the old factors will be factors unless they're also factors of the addend.
+                skip = frozenset(old_factors.intersection(self._add_factors))
                 # Basically all of the time is spent here.
-                item.factors = factor(item.priority)
+                item.factors = set(factor(item.priority, skip=skip))
             case OperationType.multiplication:
                 for multiplier in self.operation_args:
                     item.priority = item.priority * multiplier
@@ -151,9 +159,9 @@ print(factors_to_check)
 for item in Item.instances:
     item.update_factors()
 
-N_ROUNDS = 1000
+N_ROUNDS = 1001
 for i in range(N_ROUNDS):
-    if i in (1, 20, 100, 250, 500, 600, 700, 800, 900, 1000):
+    if i in (1, 20, 100, 250, 500, 600, 700, 800, 900, 999, 1000):
         print(f'Round {i}')
         print([m._inspections for m in monkeys])
     for monkey in monkeys:
