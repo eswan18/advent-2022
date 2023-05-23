@@ -1,6 +1,7 @@
 use std::fmt;
 use regex::Regex;
 
+#[derive(Clone)]
 pub struct Crate {
     pub char: char,
 }
@@ -34,8 +35,20 @@ impl Stack {
         self.crates.pop()
     }
 
+    pub fn popn(&mut self, n: usize) -> Option<Vec<Crate>> {
+        let start = self.len() - n;
+        let end = self.len();
+        let crates = self.crates[start..end].to_vec();
+        self.crates = self.crates[0..start].to_vec();
+        Some(crates)
+    }
+
     pub fn peek(&self) -> Option<&Crate> {
         self.crates.last()
+    }
+
+    pub fn len(&self) -> usize {
+        self.crates.len()
     }
 }
 
