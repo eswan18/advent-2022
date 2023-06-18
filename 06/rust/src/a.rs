@@ -4,9 +4,6 @@ pub fn main(contents: String) -> Result<String, String> {
     for window_end in WINDOW_LENGTH..contents.len() {
         let window_start = window_end - WINDOW_LENGTH;
         let window = &contents[window_start..window_end];
-        println!("Window start: {}", window_start);
-        println!("Window end: {}", window_end);
-        println!("Window: {}", window);
         if all_chars_unique(window) {
             // We use one-based indexing in this madhouse, but ranges like [0, 4] are
             // exclusive on the right, which cancels out the need to add one.
