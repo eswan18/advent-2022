@@ -1,8 +1,6 @@
 mod a;
 mod b;
 
-use std::error::Error;
-
 enum Part { A, B }
 
 impl Part {
@@ -15,31 +13,31 @@ impl Part {
     }
 }
 
-struct Args <'a> {
+struct Args {
     part: Part,
-    input_file: &'a str,
+    input_file: String,
 }
 
-fn parse_args<'a>(raw_args: std::env::Args) -> Result<Args<'a>, String> {
+fn parse_args(raw_args: std::env::Args) -> Result<Args, String> {
     let raw_args: Vec<String> = raw_args.collect();
     if raw_args.len() != 3 {
         let message = format!("Usage: {} <a/b> <input>", raw_args[0]);
         return Err(message);
     }
     let part = Part::from_str(&raw_args[1])?;
-    let input_file = raw_args[2].as_str();
+    let input_file = raw_args[2].clone();
     Ok(Args { part, input_file })
 }
 
-pub fn run(args: std::env::Args) -> Result<(), Box<dyn Error>> {
+pub fn run(args: std::env::Args) -> Result<(), String> {
     let args = parse_args(args)?;
 
-    let contents: String = std::fs::read_to_string(args.input_file)?;
+    let contents = std::fs::read_to_string(args.input_file)
+        .map_err(|e: std::io::Error| e.to_string())?;
 
     let answer: String = match args.part {
-        A => a::main(contents)?,
-        B => b::main(contents)?,
-        _ => panic!("Invalid part"),
+        Part::A => a::main(contents)?,
+        Part::B => b::main(contents)?,
     };
 
     println!("Your answer is {}", answer);
