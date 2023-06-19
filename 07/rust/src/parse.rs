@@ -14,10 +14,32 @@ impl ParsedLine {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Command {
     Cd{directory: String},
-    List{output: Vec<String>},
+    List{output: Vec<Listing>},
+}
+
+#[derive(Debug, Clone)]
+pub enum Listing {
+    Directory{name: String},
+    File{name: String, size: i32},
+}
+
+impl Listing {
+    fn from_string(s: &str) -> Result<Listing, String> {
+        let parts = s.split(" ").collect::<Vec<&str>>();
+        if parts.len() != 2 {
+            return Err(String::from("Invalid listing; more than two parts"));
+        }
+        match parts[0] {
+            "dir" => Ok(Listing::Directory{name: String::from(parts[1])}),
+            _ => {
+                let size = parts[0].parse::<i32>().map_err(|_| String::from("Invalid listing; size is not an integer"))?;
+                Ok(Listing::File{name: String::from(parts[1]), size})
+            },
+        }
+    }
 }
 
 pub fn parse(contents: String) -> Result<Vec<Command>, String> {
@@ -43,11 +65,12 @@ pub fn parse(contents: String) -> Result<Vec<Command>, String> {
                         return Err(String::from("ls command must have no arguments"));
                     }
                     // Once we find a list command, there can be 0+ output commands that follow.
-                    let mut output: Vec<String> = vec![];
+                    let mut output: Vec<Listing> = vec![];
                     // Only consume the line if it's an output line.
                     while let Some(ParsedLine::OutputLine(_)) = parsed_lines.get(0) {
                         if let ParsedLine::OutputLine(s) = parsed_lines.remove(0) {
-                            output.push(s);
+                            let new_listing = Listing::from_string(&s)?;
+                            output.push(new_listing);
                         }
                     }
                     Command::List{output}
@@ -60,8 +83,6 @@ pub fn parse(contents: String) -> Result<Vec<Command>, String> {
             return Err(String::from("Output line found without a list command"));
         }
     }
-    println!("{:?}", commands);
-
     Ok(commands)
 }
 
