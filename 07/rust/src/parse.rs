@@ -27,10 +27,9 @@ pub fn parse(contents: String) -> Result<Vec<Command>, String> {
         .collect();
 
     let mut commands = vec![];
-    while let Some(line) = parsed_lines.pop() {
-        println!("hi");
+    while !parsed_lines.is_empty() {
+        let line = parsed_lines.remove(0);
         if let ParsedLine::CommandLine(command) = line {
-            println!("hi2");
             let parts = command.split(" ").collect::<Vec<&str>>();
             let command = match parts[0] {
                 "cd" => {
@@ -43,14 +42,21 @@ pub fn parse(contents: String) -> Result<Vec<Command>, String> {
                     if parts.len() != 1 {
                         return Err(String::from("ls command must have no arguments"));
                     }
-                    Command::List{output: vec![]}
+                    // Once we find a list command, there can be 0+ output commands that follow.
+                    let mut output: Vec<String> = vec![];
+                    // Only consume the line if it's an output line.
+                    while let Some(ParsedLine::OutputLine(_)) = parsed_lines.get(0) {
+                        if let ParsedLine::OutputLine(s) = parsed_lines.remove(0) {
+                            output.push(s);
+                        }
+                    }
+                    Command::List{output}
                 },
                 _ => return Err(format!("Unknown command: {}", command)),
             };
             commands.push(command);
         } else {
             // If we've gotten here, we somehow found an output line that wasn't after a list command.
-            println!("{:?}", line);
             return Err(String::from("Output line found without a list command"));
         }
     }
