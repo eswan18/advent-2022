@@ -1,4 +1,6 @@
+use std::borrow::Borrow;
 use std::cell::RefCell;
+use std::rc::{Rc, Weak};
 
 use crate::parse;
 
@@ -6,109 +8,100 @@ use crate::parse::{Command, Listing};
 
 #[derive(Debug, Clone)]
 enum NodeData {
-    File(File),
-    Directory,
+    File { size: i32 },
+    Directory { children: RefCell<Vec<Rc<RefCell<Node>>>> },
 }
 
 #[derive(Debug, Clone)]
 struct Node {
     name: String,
     data: NodeData,
-    children: Vec<RefCell<Node>>,
+    parent: RefCell<Weak<Node>>,
 }
 
 impl Node {
-    fn new_root(name: String) -> Node {
+    fn new_root() -> Node {
         Node {
-            name,
-            data: NodeData::Directory,
-            children: vec![],
+            name: String::from("/"),
+            data: NodeData::Directory { children: RefCell::new(vec![]) },
+            parent: RefCell::new(Weak::new()),
         }
     }
 
-    fn new_from_data(name: String, data: NodeData) -> Node {
+    fn new(name: String, data: NodeData, parent: &Rc<Node>) -> Node {
         Node {
             name,
             data,
-            children: vec![],
+            parent: RefCell::new(Rc::downgrade(parent)),
         }
     }
 
     fn size(&self) -> i32 {
         match &self.data {
-            NodeData::File(file) => file.size,
-            NodeData::Directory => {
-                self.children.iter().map(|child| {
-                    let child = (*child).borrow();
-                    child.size()
-                }).sum()
+            NodeData::File { size } => *size,
+            NodeData::Directory { children } => {
+                children.iter().map(|child| (**child).borrow().size()).sum()
             }
         }
     }
 
-    fn add_child_from_ref(&mut self, child: RefCell<Node>) {
-        self.children.push(child);
+    fn add_child_from_data(&self, name: String, data: NodeData) {
+        let node = Node{
+            name,
+            data,
+            parent: RefCell::new(Weak::new()),
+        };
+        if let NodeData::Directory { children } = &self.data {
+            *node.borrow().parent.borrow_mut() = Rc::downgrade(&Rc::clone(&self));
+            children.borrow_mut().push(Rc::clone(&node));
+        }
     }
 
-    fn add_child_from_data(&mut self, name: String, child: NodeData) {
-        let node = Node::new_from_data(name, child);
-        self.add_child_from_ref(RefCell::new(node));
-    }
-
-    fn update_from_listing(&mut self, l: Listing) {
-        match l {
-            Listing::Directory { name } => {
-                let already_exists = self.children.iter().any(|child| { child.borrow().name == name });
-                if already_exists {
-                    return;
-                }
-                let child = NodeData::Directory;
-                self.add_child_from_data(name, child);
-            }
-            Listing::File { name, size } => {
-                let already_exists = self.children.iter().any(|child| { child.borrow().name == name });
-                if already_exists {
-                    return;
-                }
-                let name_copy = name.clone();
-                let file = File{ name, size };
-                self.add_child_from_data(name_copy, NodeData::File(file));
+    fn get_child_by_name(&self, name: &str) -> Option<Rc<RefCell<Node>>> {
+        match &self.data {
+            NodeData::File { .. } => None,
+            NodeData::Directory { children } => {
+                children.iter().find(|child| (**child).borrow().name == name)
             }
         }
     }
-}
-
-#[derive(Debug, Clone)]
-struct File {
-    name: String,
-    size: i32,
 }
 
 pub fn main(contents: String) -> Result<String, String> {
     let commands = parse::parse(contents)?;
 
     // Build a tree from the commands
-    let root = RefCell::new(Node::new_root(String::from("/")));
-    let mut dir_stack = vec![root];
+    let root = Rc::new(Node::new_root());
+    let mut current_dir = Rc::clone(&root);
 
     for command in commands {
-        let mut current_dir = dir_stack[dir_stack.len() - 1].borrow_mut();
         match command {
-            Command::Cd { directory } => {
-                let new_dir = current_dir
-                    .children.iter()
-                    .find(|child| child.borrow().name == directory)
-                    .ok_or(String::from("Directory not found"))?;
-                dir_stack.push(*new_dir);
-            },
             Command::List { output } => {
                 for listing in output {
-                    current_dir.update_from_listing(listing);
+                    match listing {
+                        Listing::Directory { name } => {
+                            current_dir.add_child_from_data(
+                                name,
+                                NodeData::Directory {
+                                    children: RefCell::new(vec![]),
+                                },
+                            );
+                        }
+                        Listing::File { name, size } => {
+                            current_dir.add_child_from_data(
+                                name,
+                                NodeData::File { size },
+                            );
+                        }
+                    }
                 }
+            },
+            Command::Cd { directory } => {
+                // Find the directory
+                let new_dir = current_dir.get_child_by_name(name);
             },
         }
     }
 
     Ok(String::from("Hello"))
 }
-
