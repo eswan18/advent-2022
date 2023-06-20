@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
-use std::iter::IntoIterator;
+use crate::parse::{Command, Listing};
 
 #[derive(Debug, Clone)]
 pub enum NodeData {
@@ -17,6 +17,53 @@ pub struct Node {
 }
 
 impl Node {
+    pub fn new_from_commands(commands: Vec<Command>) -> Result<Node, String> {
+        let root = Node::new_root();
+        let root_ref = Rc::new(root);
+        let mut current_dir = Rc::clone(&root_ref);
+
+        for command in commands {
+            match command {
+                Command::List { output } => {
+                    for listing in output {
+                        let child = match listing {
+                            Listing::Directory { name } => Node::new(name, NodeData::Directory),
+                            Listing::File { name, size } => Node::new(name, NodeData::File { size }),
+                        };
+                        Rc::clone(&current_dir).add_child(child.clone());
+                    }
+                },
+
+                Command::Cd { directory } => {
+                    match directory.as_str() {
+                        "/" => {
+                            current_dir = Rc::clone(&root_ref);
+                            continue;
+                        },
+                        ".." => {
+                            // navigate up.
+                            let maybe_parent = current_dir.parent.borrow().upgrade();
+                            if let Some(parent) = maybe_parent {
+                                current_dir = parent;
+                                continue;
+                            } else {
+                                panic!("Can't navigate above a root directory");
+                            };
+                        },
+                        _ => {
+                            // Find the directory
+                            current_dir = current_dir.find_child(&directory).ok_or_else(|| String::from("Directory not found"))?;
+                        },
+                    }
+                },
+            }
+        }
+
+        // Get the underlying value out of root_ref
+        let root = Rc::try_unwrap(root_ref).map_err(|_| String::from("Could not unwrap root"))?;
+        Ok(root)
+    }
+
     pub fn new_root() -> Node {
         Node {
             name: String::from("/"),
