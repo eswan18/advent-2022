@@ -8,6 +8,20 @@ pub struct Forest {
     trees: Vec<Vec<Tree>>,
 }
 
+fn take_until_inclusive<T, F>(xs: &Vec<T>, f: F) -> Vec<&T>
+where
+    F: Fn(&T) -> bool,
+{
+    let mut ys = vec![];
+    for x in xs {
+        ys.push(x);
+        if f(x) {
+            break;
+        }
+    }
+    ys
+}
+
 impl Forest {
     pub fn new_from_text(s: String) -> Result<Self, String> {
         let trees = s
@@ -30,6 +44,66 @@ impl Forest {
             .get(y)
             .and_then(|row| row.get(x))
             .ok_or_else(|| format!("out of bounds at {}, {}", x, y))
+    }
+
+    pub fn left_of(&self, x: usize, y: usize) -> Result<Vec<Tree>, String> {
+        // Get all the trees to the right of (x, y).
+        let mut trees = vec![];
+        for x in (0..x).rev() {
+            trees.push(*self.at(x, y)?);
+        } 
+        Ok(trees)
+    }
+
+    pub fn right_of(&self, x: usize, y: usize) -> Result<Vec<Tree>, String> {
+        // Get all the trees to the right of (x, y).
+        let (cols, _) = self.dimensions();
+        let mut trees = vec![];
+        for x in (x + 1)..cols {
+            trees.push(*self.at(x, y)?);
+        } 
+        Ok(trees)
+    }
+
+    pub fn above(&self, x: usize, y: usize) -> Result<Vec<Tree>, String> {
+        // Get all the trees above (x, y).
+        let mut trees = vec![];
+        for y in (0..y).rev() {
+            trees.push(*self.at(x, y)?);
+        } 
+        Ok(trees)
+    }
+
+    pub fn below(&self, x: usize, y: usize) -> Result<Vec<Tree>, String> {
+        // Get all the trees below (x, y).
+        let (_, rows) = self.dimensions();
+        let mut trees = vec![];
+        for y in (y + 1)..rows {
+            trees.push(*self.at(x, y)?);
+        } 
+        Ok(trees)
+    }
+
+    pub fn scenic_score(&self, x: usize, y: usize) -> Result<usize, String> {
+        let current_tree = self.at(x, y)?.clone();
+
+        let trees_left = self.left_of(x, y)?;
+        let visible_left = take_until_inclusive(&trees_left, |t| t >= &current_tree);
+        let left_score = visible_left.len();
+
+        let trees_right = self.right_of(x, y)?;
+        let visible_right = take_until_inclusive(&trees_right, |t| t >= &current_tree);
+        let right_score = visible_right.len();
+
+        let trees_above = self.above(x, y)?;
+        let visible_above = take_until_inclusive(&trees_above, |t| t >= &current_tree);
+        let above_score = visible_above.len();
+
+        let trees_below = self.below(x, y)?;
+        let visible_below = take_until_inclusive(&trees_below, |t| t >= &current_tree);
+        let below_score = visible_below.len();
+
+        Ok(left_score * right_score * above_score * below_score)
     }
 
     pub fn dimensions(&self) -> (usize, usize) {
@@ -171,5 +245,61 @@ mod tests {
         let s = String::from("123\n456\n789");
         let forest = Forest::new_from_text(s).unwrap();
         assert_eq!(format!("{}", forest), "123\n456\n789\n");
+    }
+
+    #[test]
+    fn test_right_of() {
+        let s = String::from("123\n456\n789");
+        let forest = Forest::new_from_text(s).unwrap();
+        assert_eq!(forest.right_of(0, 0).unwrap(), vec![2, 3]);
+        assert_eq!(forest.right_of(1, 0).unwrap(), vec![3]);
+        assert_eq!(forest.right_of(2, 0).unwrap(), vec![]);
+        assert_eq!(forest.right_of(1, 1).unwrap(), vec![6]);
+    }
+
+    #[test]
+    fn test_left_of() {
+        let s = String::from("123\n456\n789");
+        let forest = Forest::new_from_text(s).unwrap();
+        assert_eq!(forest.left_of(0, 0).unwrap(), vec![]);
+        assert_eq!(forest.left_of(1, 0).unwrap(), vec![1]);
+        assert_eq!(forest.left_of(2, 0).unwrap(), vec![2, 1]);
+        assert_eq!(forest.left_of(1, 1).unwrap(), vec![4]);
+    }
+
+    #[test]
+    fn test_above() {
+        let s = String::from("123\n456\n789");
+        let forest = Forest::new_from_text(s).unwrap();
+        assert_eq!(forest.above(0, 0).unwrap(), vec![]);
+        assert_eq!(forest.above(1, 0).unwrap(), vec![]);
+        assert_eq!(forest.above(0, 1).unwrap(), vec![1]);
+        assert_eq!(forest.above(2, 2).unwrap(), vec![6, 3]);
+    }
+
+    #[test]
+    fn test_below() {
+        let s = String::from("123\n456\n789");
+        let forest = Forest::new_from_text(s).unwrap();
+        assert_eq!(forest.below(0, 0).unwrap(), vec![4, 7]);
+        assert_eq!(forest.below(1, 0).unwrap(), vec![5, 8]);
+        assert_eq!(forest.below(0, 1).unwrap(), vec![7]);
+        assert_eq!(forest.below(2, 2).unwrap(), vec![]);
+    }
+
+    #[test]
+    fn test_scenic_score() {
+        let s = String::from("30373\n25512\n65332\n33549\n35390");
+        let forest = Forest::new_from_text(s).unwrap();
+        
+        // Trees on the edge will have a score of 0 in at least one direction.
+        assert_eq!(forest.scenic_score(0, 0), Ok(0));
+        assert_eq!(forest.scenic_score(1, 0), Ok(0));
+        assert_eq!(forest.scenic_score(0, 1), Ok(0));
+        assert_eq!(forest.scenic_score(4, 2), Ok(0));
+        assert_eq!(forest.scenic_score(2, 4), Ok(0));
+
+        assert_eq!(forest.at(2, 3), Ok(&5));
+        assert_eq!(forest.scenic_score(2, 3), Ok(8));
     }
 }
