@@ -16,7 +16,7 @@ I may eventually come back and do them in other languages.
 |   4 |     ** |      |   ** |
 |   5 |     ** |      |   ** |
 |   6 |     ** |      |   ** |
-|   7 |     ** |      |      |
+|   7 |     ** |      |   ** |
 |   8 |     ** |      |      |
 |   9 |     ** |      |      |
 |  10 |     ** |      |      |
