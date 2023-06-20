@@ -38,25 +38,28 @@ impl Forest {
         (width, height)
     }
 
-    pub fn visible_positions(&self) -> Vec<(usize, usize)> {
-        // Find all tree positions that are visible from outside the grid.
-
+    fn visible_from_top(&self) -> Vec<(usize, usize)> {
         let (cols, rows) = self.dimensions();
 
-        let mut visible_from_top = HashSet::new();
+        let mut visible = vec![];
         for x in 0..cols {
             // Track the tallest tree we've seen so we know if trees behind it are visible.
             let mut tallest_seen: i32 = -1;
             for y in 0..rows {
                 let tree = self.at(x, y).unwrap();
                 if (*tree as i32) > tallest_seen {
-                    visible_from_top.insert((x, y));
+                    visible.push((x,y));
                     tallest_seen = tree.clone() as i32;
                 }
             }
         }
+        visible
+    }
 
-        let mut visible_from_bottom = HashSet::new();
+    fn visible_from_bottom(&self) -> Vec<(usize, usize)> {
+        let (cols, rows) = self.dimensions();
+
+        let mut visible = vec![];
         for x in 0..cols {
             // Track the tallest tree we've seen so we know if trees behind it are visible.
             let mut tallest_seen: i32 = -1;
@@ -64,43 +67,65 @@ impl Forest {
                 let y = rows - (from_bottom + 1);
                 let tree = self.at(x, y).unwrap();
                 if (*tree as i32) > tallest_seen {
-                    visible_from_bottom.insert((x, y));
+                    visible.push((x,y));
                     tallest_seen = tree.clone() as i32;
                 }
             }
         }
+        visible
+    }
 
-        let mut visible_from_left = HashSet::new();
+    fn visible_from_left(&self) -> Vec<(usize, usize)> {
+        let (cols, rows) = self.dimensions();
+
+        let mut visible = vec![];
         for y in 0..rows {
             let mut tallest_seen: i32 = -1;
             for x in 0..cols {
                 let tree = self.at(x, y).unwrap();
                 if (*tree as i32) > tallest_seen {
-                    visible_from_left.insert((x, y));
+                    visible.push((x,y));
                     tallest_seen = tree.clone() as i32;
                 }
             }
         }
+        visible
+    }
 
-        let mut visible_from_right = HashSet::new();
+    fn visible_from_right(&self) -> Vec<(usize, usize)> {
+        let (cols, rows) = self.dimensions();
+
+        let mut visible = vec![];
         for y in 0..rows {
             let mut tallest_seen: i32 = -1;
             for from_right in 0..cols {
                 let x = cols - (from_right + 1);
                 let tree = self.at(x, y).unwrap();
                 if (*tree as i32) > tallest_seen {
-                    visible_from_right.insert((x, y));
+                    visible.push((x,y));
                     tallest_seen = tree.clone() as i32;
                 }
             }
         }
+        visible
+    }
 
-        let mut visible_trees = HashSet::new();
-        for visible_set in vec![visible_from_top, visible_from_bottom, visible_from_left, visible_from_right] {
-            visible_trees.extend(visible_set);
-        }
+    pub fn visible_positions(&self) -> Vec<(usize, usize)> {
+        // Find all tree positions that are visible from outside the grid.
 
-        visible_trees.into_iter().collect()
+        let visible_sets = vec![
+            self.visible_from_top(),
+            self.visible_from_bottom(),
+            self.visible_from_left(),
+            self.visible_from_right(),
+        ];
+
+        let mut visible = HashSet::new();
+        visible_sets.iter().for_each(|visible_set| {
+            visible.extend(visible_set);
+        });
+
+        visible.into_iter().collect()
     }
 }
 
