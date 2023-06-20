@@ -1,6 +1,6 @@
+use crate::parse::{Command, Listing};
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
-use crate::parse::{Command, Listing};
 
 #[derive(Debug, Clone)]
 pub enum NodeData {
@@ -28,18 +28,20 @@ impl Node {
                     for listing in output {
                         let child = match listing {
                             Listing::Directory { name } => Node::new(name, NodeData::Directory),
-                            Listing::File { name, size } => Node::new(name, NodeData::File { size }),
+                            Listing::File { name, size } => {
+                                Node::new(name, NodeData::File { size })
+                            }
                         };
                         Rc::clone(&current_dir).add_child(child.clone());
                     }
-                },
+                }
 
                 Command::Cd { directory } => {
                     match directory.as_str() {
                         "/" => {
                             current_dir = Rc::clone(&root_ref);
                             continue;
-                        },
+                        }
                         ".." => {
                             // navigate up.
                             let maybe_parent = current_dir.parent.borrow().upgrade();
@@ -49,13 +51,15 @@ impl Node {
                             } else {
                                 panic!("Can't navigate above a root directory");
                             };
-                        },
+                        }
                         _ => {
                             // Find the directory
-                            current_dir = current_dir.find_child(&directory).ok_or_else(|| String::from("Directory not found"))?;
-                        },
+                            current_dir = current_dir
+                                .find_child(&directory)
+                                .ok_or_else(|| String::from("Directory not found"))?;
+                        }
                     }
-                },
+                }
             }
         }
 
@@ -85,9 +89,12 @@ impl Node {
     pub fn size(&self) -> i32 {
         match &self.value {
             NodeData::File { size } => *size,
-            NodeData::Directory => {
-                self.children.borrow().iter().map(|child| child.size()).sum()
-            }
+            NodeData::Directory => self
+                .children
+                .borrow()
+                .iter()
+                .map(|child| child.size())
+                .sum(),
         }
     }
 
@@ -121,6 +128,4 @@ impl Node {
 
         descendants
     }
-
 }
-

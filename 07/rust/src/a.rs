@@ -1,6 +1,5 @@
-use crate::parse;
 use crate::node::{Node, NodeData};
-
+use crate::parse;
 
 const MAX_SIZE: i32 = 100000;
 
@@ -14,7 +13,10 @@ pub fn main(contents: String) -> Result<String, String> {
     let mut small_dirs = Vec::new();
 
     let descendants = tree.descendants();
-    let dir_descendants = descendants.iter().filter(|x| match x.value { NodeData::Directory => true, _ => false });
+    let dir_descendants = descendants.iter().filter(|x| match x.value {
+        NodeData::Directory => true,
+        _ => false,
+    });
     for dir in dir_descendants {
         let dir_size = dir.size();
         if dir_size <= MAX_SIZE {
