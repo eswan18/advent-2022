@@ -5,8 +5,6 @@ const MAX_SIZE: i32 = 100000;
 
 pub fn main(contents: String) -> Result<String, String> {
     let commands = parse::parse(contents)?;
-
-    // Build a tree from the commands
     let tree = Node::new_from_commands(commands)?;
 
     // Find all directories with a size of at most MAX_SIZE
