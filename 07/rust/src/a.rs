@@ -1,66 +1,9 @@
-use std::cell::RefCell;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use crate::parse;
+use crate::node::{Node, NodeData};
 
 use crate::parse::{Command, Listing};
-
-#[derive(Debug, Clone)]
-enum NodeData {
-    File { size: i32 },
-    Directory,
-}
-
-#[derive(Debug, Clone)]
-struct Node {
-    name: String,
-    value: NodeData,
-    children: RefCell<Vec<Rc<Node>>>,
-    parent: RefCell<Weak<Node>>,
-}
-
-impl Node {
-    fn new_root() -> Node {
-        Node {
-            name: String::from("/"),
-            children: RefCell::new(vec![]),
-            value: NodeData::Directory,
-            parent: RefCell::new(Weak::new()),
-        }
-    }
-
-    fn new(name: String, value: NodeData) -> Rc<Node> {
-        Rc::new(Node {
-            name,
-            value,
-            children: RefCell::new(vec![]),
-            parent: RefCell::new(Weak::new()),
-        })
-    }
-
-    /*fn size(&self) -> i32 {
-        match &self.data {
-            NodeData::File { size } => *size,
-            NodeData::Directory { children } => {
-                children.iter().map(|child| (**child).borrow().size()).sum()
-            }
-        }
-    }*/
-
-    fn add_child(self: &Rc<Self>, child: Rc<Node>) {
-        *child.parent.borrow_mut() = Rc::downgrade(self);
-        self.children.borrow_mut().push(Rc::clone(&child));
-    }
-
-    fn find_child(&self, name: &str) -> Option<Rc<Node>> {
-        for child in self.children.borrow().iter() {
-            if child.name == name {
-                return Some(Rc::clone(child));
-            }
-        }
-        None
-    }
-}
 
 pub fn main(contents: String) -> Result<String, String> {
     let commands = parse::parse(contents)?;
@@ -72,6 +15,7 @@ pub fn main(contents: String) -> Result<String, String> {
 
     for command in commands {
         println!("Executing {:?}", command);
+
         match command {
             Command::List { output } => {
                 for listing in output {
@@ -83,6 +27,7 @@ pub fn main(contents: String) -> Result<String, String> {
                     println!("Added child {:?}", child);
                 }
             },
+
             Command::Cd { directory } => {
                 match directory.as_str() {
                     "/" => {
@@ -111,5 +56,6 @@ pub fn main(contents: String) -> Result<String, String> {
         }
     }
 
-    Ok(String::from("Hello"))
+    let size = root_ref.size();
+    Ok(size.to_string())
 }
