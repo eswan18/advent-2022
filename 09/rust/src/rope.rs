@@ -1,5 +1,6 @@
 use std::collections::hash_set::HashSet;
 
+#[derive(Debug, Clone, Copy)]
 enum Direction {
     Up,
     Down,
@@ -13,6 +14,48 @@ pub struct Position {
     y: i32,
 }
 
+pub struct MultiRope {
+    ropes: Vec<Rope>,
+}
+
+impl MultiRope {
+    pub fn new_at_origin(n_knots: usize) -> MultiRope {
+        assert!(n_knots > 0);
+        let mut ropes = Vec::new();
+        for _ in 0..n_knots {
+            ropes.push(Rope::new_at_origin());
+        }
+        MultiRope { ropes }
+    }
+
+    pub fn do_instruction(&mut self, instruction: Instruction) {
+        let n_ropes = self.ropes.len();
+        // We have to move everything one step at a time, so we play out each step.
+        for _step in 0..instruction.distance {
+            self.ropes[0].move_head(instruction.direction, 1);
+            while self.ropes[0].update_tail() {}
+
+            for i in 1..n_ropes {
+                // Move the head of each rope to the tail of the rope in front of it.
+                let last_rope_position = self.ropes[i - 1].tail.clone();
+                self.ropes[i].move_head_to(last_rope_position);
+                // Repeatedly update the tail until it is adjacent to the head.
+                while self.ropes[i].update_tail() {}
+            }
+        }
+    }
+
+    pub fn get_count_uniq_tail_spaces(&self) -> usize {
+        let mut uniq_spaces = HashSet::new();
+        let last_rope = &self.ropes[self.ropes.len() - 1];
+        for space in last_rope.tail_history.iter() {
+            uniq_spaces.insert(space.clone());
+        }
+        uniq_spaces.len()
+    }
+}
+
+#[derive(Debug)]
 pub struct Rope {
     head: Position,
     tail: Position,
@@ -35,6 +78,11 @@ impl Rope {
             Direction::Left => self.head.x -= distance,
             Direction::Right => self.head.x += distance,
         }
+    }
+
+
+    pub fn move_head_to(&mut self, position: Position) {
+        self.head = position;
     }
 
     fn update_tail(&mut self) -> bool {
@@ -111,10 +159,6 @@ impl Rope {
         while self.update_tail() {}
     }
 
-    pub fn get_tail_history(&self) -> Vec<Position> {
-        self.tail_history.clone()
-    }
-
     pub fn get_count_uniq_tail_spaces(&self) -> usize {
         let mut uniq_spaces = HashSet::new();
         for space in self.tail_history.iter() {
@@ -124,6 +168,7 @@ impl Rope {
     }
 }
 
+#[derive(Debug)]
 pub struct Instruction {
     direction: Direction,
     distance: i32,
