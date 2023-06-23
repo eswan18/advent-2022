@@ -6,5 +6,6 @@ pub fn main(contents: String) -> Result<String, String> {
     for i in instructions {
         rope.do_instruction(i);
     }
-    Ok("hi".to_string())
+    let tail_space_count = rope.get_count_uniq_tail_spaces();
+    Ok(tail_space_count.to_string())
 }
