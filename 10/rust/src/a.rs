@@ -11,15 +11,15 @@ pub fn main(contents: String) -> Result<String, String> {
 
     let mut total_strength = 0;
     loop {
-        if state.cycles > *cycles_of_note.last().unwrap() {
+        if state.starting_cycle > *cycles_of_note.last().unwrap() {
             break;
+        }
+        println!("Cycle {}: {}  =>  {}", &state.starting_cycle, &state.value, &state.signal_strength());
+        if cycles_of_note.contains(&state.starting_cycle) {
+            total_strength += state.signal_strength();
         }
         if let Err(_) = state.tick() {
             break;
-        }
-        if cycles_of_note.contains(&state.cycles) {
-            total_strength += state.signal_strength();
-            println!("Cycle {}: {}", &state.cycles, state.signal_strength());
         }
     }
 

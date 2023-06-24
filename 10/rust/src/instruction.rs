@@ -34,8 +34,14 @@ impl Instruction {
 
     pub fn transform_value(&self, value: i32) -> i32 {
         match self {
-            Instruction::Noop => value,
-            Instruction::AddX(x) => value + x,
+            Instruction::Noop => {
+                println!("Noop: {}", value);
+                value
+            },
+            Instruction::AddX(x) => {
+                println!("Adding {} to {}", x, value);
+                value + x
+            },
         }
     }
 }
