@@ -18,8 +18,8 @@ I may eventually come back and do them in other languages.
 |   6 |     ** |      |   ** |
 |   7 |     ** |      |   ** |
 |   8 |     ** |      |   ** |
-|   9 |     ** |      |      |
-|  10 |     ** |      |      |
+|   9 |     ** |      |   ** |
+|  10 |     ** |      |   ** |
 |  11 |        |      |      |
 |  12 |        |      |      |
 |  13 |        |      |      |
