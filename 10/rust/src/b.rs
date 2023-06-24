@@ -11,22 +11,23 @@ pub fn main(contents: String) -> Result<String, String> {
     let mut state = CpuState::new();
     state.queue_instructions(&mut instructions);
 
+    let mut text = String::from("\n");
     loop {
-        let pixel = state.starting_cycle % LINE_LENGTH;
+        let pixel = (state.starting_cycle - 1) % LINE_LENGTH;
         let sprite_pos = state.value;
 
         if (pixel as i32 - sprite_pos).abs() <= 1 {
-            print!("#");
+            text.push_str("#");
         } else {
-            print!(" ");
+            text.push_str(" ");
         }
         if (pixel + 1) % LINE_LENGTH == 0 {
-            println!();
+            text.push_str("\n");
         } 
         if let Err(_) = state.tick() {
             break;
         }
     }
 
-    Ok("".to_string())
+    Ok(text)
 }

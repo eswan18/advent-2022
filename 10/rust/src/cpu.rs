@@ -11,7 +11,7 @@ pub struct CpuState {
 impl CpuState {
     pub fn new() -> CpuState {
         CpuState {
-            starting_cycle: 0,
+            starting_cycle: 1,
             value: 1,
             instructions: Vec::new(),
             instruction_in_progress: None,
@@ -50,7 +50,7 @@ impl CpuState {
     }
 
     pub fn signal_strength(&self) -> i32 {
-        self.value * self.starting_cycle as i32
+        self.value * (self.starting_cycle as i32)
     }
 }
 
