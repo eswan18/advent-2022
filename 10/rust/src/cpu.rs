@@ -11,7 +11,7 @@ pub struct CpuState {
 impl CpuState {
     pub fn new() -> CpuState {
         CpuState {
-            starting_cycle: 1,
+            starting_cycle: 0,
             value: 1,
             instructions: Vec::new(),
             instruction_in_progress: None,
