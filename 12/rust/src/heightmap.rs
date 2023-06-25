@@ -7,7 +7,7 @@ pub struct HeightMap {
     start_pos: Position,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Position {
     x: usize,
     y: usize,
@@ -47,6 +47,32 @@ impl HeightMap {
 
     fn at(&self, pos: &Position) -> Option<&Point> {
         self.points.get(pos.y)?.get(pos.x)
+    }
+
+    fn adjacent_positions(&self, pos: &Position) -> Vec<Position> {
+        let mut positions = Vec::new();
+        if pos.x > 0 {
+            positions.push(Position{x: pos.x - 1, y: pos.y});
+        }
+        if pos.y > 0 {
+            positions.push(Position{x: pos.x, y: pos.y - 1});
+        }
+        if pos.x < self.points[0].len() - 1 {
+            positions.push(Position{x: pos.x + 1, y: pos.y});
+        }
+        if pos.y < self.points.len() - 1 {
+            positions.push(Position{x: pos.x, y: pos.y + 1});
+        }
+        positions
+    }
+
+    fn viable_moves_from(&self, pos: &Position) -> Vec<Position> {
+        let moves: Vec<_> = self
+            .adjacent_positions(pos)
+            .into_iter()
+            .filter(|p| self.valid_elevation_change(pos, p).unwrap_or(false))
+            .collect();
+        moves
     }
 
     fn valid_elevation_change(&self, a: &Position, b: &Position) -> Result<bool, String> {
@@ -102,5 +128,28 @@ mod tests {
         }
         // We can't get from 'x' to E ('z') though
         assert_eq!(map.valid_elevation_change(&Position{x: 1, y: 2}, &Position{x: 1, y: 1}), Ok(false));
+    }
+
+    #[test]
+    fn test_viable_moves() {
+        let contents = "Sab\ncEd\ngxy";
+        let map = HeightMap::build_from_str(contents).unwrap();
+        
+        let viable_moves = map.viable_moves_from(&Position{x: 0, y: 0});
+        assert_eq!(viable_moves.len(), 1);
+        assert_eq!(viable_moves[0], Position{x: 1, y: 0});
+
+        let viable_moves = map.viable_moves_from(&Position{x: 2, y: 0});
+        assert_eq!(viable_moves.len(), 1);
+        assert_eq!(viable_moves[0], Position{x: 1, y: 0});
+
+        let viable_moves = map.viable_moves_from(&Position{x: 1, y: 2});
+        assert_eq!(viable_moves.len(), 2);
+        assert!(viable_moves.contains(&Position{x: 0, y: 2}));
+        assert!(viable_moves.contains(&Position{x: 2, y: 2}));
+
+        let viable_moves = map.viable_moves_from(&Position{x: 0, y: 1});
+        assert_eq!(viable_moves.len(), 1);
+        assert_eq!(viable_moves[0], Position{x: 0, y: 0});
     }
 }
