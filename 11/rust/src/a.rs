@@ -8,7 +8,7 @@ pub fn main(contents: String) -> Result<String, String> {
     for _round in 1..21 {
         for i in 0..monkeys.len() {
             let current_monkey = &mut monkeys[i];
-            let items = current_monkey.take_turn();
+            let items = current_monkey.take_turn(true);
             // Assign these items to the monkeys they belong to.
             for (item, next_monkey) in items {
                 monkeys[next_monkey].add_item(item);

@@ -1,7 +1,7 @@
 use std::{num::ParseIntError, fmt::Display};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Item(usize);
+pub struct Item(u128);
 
 type ItemUpdater = dyn Fn(Item) -> Item;
 
@@ -50,15 +50,17 @@ impl Monkey {
         self.items.push(i);
     }
 
-    pub fn pop_item(&mut self) -> Option<(Item, usize)> {
+    pub fn pop_item(&mut self, reduce: bool) -> Option<(Item, usize)> {
         if self.items.len() == 0 {
             return None;
         }
         // Get the first item and adjust its worry value.
-        let item = self.items.remove(0);
-        let item = self.update_item(item);
+        let mut item = self.items.remove(0);
+        item = self.update_item(item);
         // You get a bit less worried...
-        let item = Item(item.0 / 3);
+        if reduce {
+            item = Item(item.0 / 3);
+        }
         // Decide where to send the item next.
         let next_monkey = if self.test_item(&item) {
             self.on_true
@@ -69,9 +71,9 @@ impl Monkey {
         Some((item, next_monkey))
     }
 
-    pub fn take_turn(&mut self) -> Vec<(Item, usize)> {
+    pub fn take_turn(&mut self, reduce: bool) -> Vec<(Item, usize)> {
         let mut items = vec![];
-        while let Some((item, next_monkey)) = self.pop_item() {
+        while let Some((item, next_monkey)) = self.pop_item(reduce) {
             items.push((item, next_monkey));
         }
         items
@@ -96,8 +98,8 @@ impl Monkey {
             .ok_or("Could not parse starting items")?;
         let items = items
             .split(", ")
-            .map(|i| i.parse::<usize>())
-            .collect::<Result<Vec<usize>, ParseIntError>>()
+            .map(|i| i.parse::<u128>())
+            .collect::<Result<Vec<u128>, ParseIntError>>()
             .map_err(|_| "Could not parse starting items")?;
         let items = items.iter().map(|i| Item(*i)).collect();
         // Updater
@@ -110,11 +112,11 @@ impl Monkey {
             ["old", "+", "old"] => Box::new(|i: Item| Item(i.0 + i.0)),
             ["old", "*", "old"] => Box::new(|i: Item| Item(i.0 * i.0)),
             ["old", "*", x] | [x, "*", "old"] => {
-                let x = x.parse::<usize>().map_err(|_| "Could not parse updater")?;
+                let x = x.parse::<u128>().map_err(|_| "Could not parse updater")?;
                 Box::new(move |i: Item| Item(i.0 * x))
             }
             ["old", "+", x] | [x, "+", "old"] => {
-                let x = x.parse::<usize>().map_err(|_| "Could not parse updater")?;
+                let x = x.parse::<u128>().map_err(|_| "Could not parse updater")?;
                 Box::new(move |i: Item| Item(i.0 + x))
             }
             _ => return Err("Could not parse updater".to_string()),
