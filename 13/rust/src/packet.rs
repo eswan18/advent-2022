@@ -69,6 +69,8 @@ impl Packet {
                     items.push(PacketItem::Number(n));
                 }
                 Token::LB => {
+                    // This means we're starting a nested packet. We need to add the LB back so that the recursive parser can see it.
+                    tokens.insert(0, Token::LB);
                     let inner_packet = Self::build_from_tokens(tokens)?;
                     items.push(PacketItem::Packet(inner_packet));
                 }
@@ -138,16 +140,22 @@ mod tests {
     }
     
     #[test]
-    fn test_build_from_tokens() {
+    fn test_build_from_tokens_simple() {
         let text = "[1,2,3]";
-        let mut tokens = Token::tokenize(text).unwrap();
-        let packet = Packet::build_from_tokens(&mut tokens).unwrap();
+        let packet = Packet::build_from_text(text).unwrap();
+        let as_string = format!("{}", packet);
+        assert_eq!(as_string, text);
+    }
+
+    #[test]
+    fn test_build_from_tokens_nested() {
+        let text = "[1,[1,2,3],3]";
+        let packet = Packet::build_from_text(text).unwrap();
         let as_string = format!("{}", packet);
         assert_eq!(as_string, text);
 
-        let text = "[1,[1],3]";
-        let mut tokens = Token::tokenize(text).unwrap();
-        let packet = Packet::build_from_tokens(&mut tokens).unwrap();
+        let text = "[[],1,[1,2],3]";
+        let packet = Packet::build_from_text(text).unwrap();
         let as_string = format!("{}", packet);
         assert_eq!(as_string, text);
     }
