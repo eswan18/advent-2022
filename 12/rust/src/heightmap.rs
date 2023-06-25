@@ -16,11 +16,6 @@ struct Position {
     y: usize,
 }
 
-#[derive(Debug, Clone)]
-struct Path {
-    points: Vec<Position>,
-}
-
 impl HeightMap {
     pub fn build_from_str(s: &str) -> Result<Self, String> {
         let mut points = Vec::new();
