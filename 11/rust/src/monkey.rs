@@ -9,11 +9,12 @@ pub struct Monkey {
     pub id: usize,
     items: Vec<Item>,
     updater: Box<ItemUpdater>,
-    divisor: i32,
+    pub divisor: i32,
     // Which monkeys to throw items to on true/false test result.
     on_true: usize,
     on_false: usize,
     pub n_inspected: usize,
+    lcm: Option<i32>,
 }
 
 impl Monkey {
@@ -25,6 +26,7 @@ impl Monkey {
         on_true: usize,
         on_false: usize,
         n_inspected: usize,
+        lcm: Option<i32>,
     ) -> Monkey {
         Monkey {
             id,
@@ -34,6 +36,7 @@ impl Monkey {
             on_true,
             on_false,
             n_inspected,
+            lcm,
         }
     }
 
@@ -60,6 +63,9 @@ impl Monkey {
         // You get a bit less worried...
         if reduce {
             item = Item(item.0 / 3);
+        }
+        if let Some(lcm) = &self.lcm {
+            item = Item(item.0 % *lcm as u128);
         }
         // Decide where to send the item next.
         let next_monkey = if self.test_item(&item) {
@@ -152,7 +158,12 @@ impl Monkey {
             on_true,
             on_false,
             n_inspected: 0,
+            lcm: None,
         })
+    }
+
+    pub fn set_lcm(&mut self, lcm: i32) {
+        self.lcm = Some(lcm);
     }
 }
 
@@ -179,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_test() {
-        let m = Monkey::new(0, Box::new(|i| i), 2, 0, 0, 0);
+        let m = Monkey::new(0, Box::new(|i| i), 2, 0, 0, 0, None);
         assert_eq!(m.test_item(&Item(0)), true);
         assert_eq!(m.test_item(&Item(1)), false);
         assert_eq!(m.test_item(&Item(2)), true);
@@ -188,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_update() {
-        let m = Monkey::new(0, Box::new(|i| Item(i.0 * 2 + 1)), 1, 0, 0, 0);
+        let m = Monkey::new(0, Box::new(|i| Item(i.0 * 2 + 1)), 1, 0, 0, 0, None);
         assert_eq!(m.update_item(Item(0)), Item(1));
         assert_eq!(m.update_item(Item(1)), Item(3));
         assert_eq!(m.update_item(Item(2)), Item(5));
