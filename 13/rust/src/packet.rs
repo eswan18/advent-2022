@@ -10,14 +10,23 @@ pub enum Token {
 
 impl Token {
     pub fn tokenize(text: &str) -> Result<Vec<Self>, String> {
-        let mut chars: Vec<char> = text.chars().collect();
+        let chars: Vec<char> = text.chars().collect();
         let mut tokens = Vec::new();
-        let pos = 0;
+        let mut pos = 0;
         while pos < chars.len() {
             match chars[pos] {
-                '[' => tokens.push(Token::LB),
-                ']' => tokens.push(Token::RB),
-                ',' => tokens.push(Token::RB),
+                '[' => {
+                    tokens.push(Token::LB);
+                    pos += 1;
+                }
+                ']' => {
+                    tokens.push(Token::RB);
+                    pos += 1;
+                }
+                ',' => {
+                    tokens.push(Token::Comma);
+                    pos += 1;
+                }
                 c if c.is_digit(10) => {
                     let mut pos_range = (pos, pos + 1);
                     // There could be more than just one digit; consume all of them.
@@ -26,7 +35,8 @@ impl Token {
                     }
                     let number_str: String = chars[pos_range.0..pos_range.1].iter().collect();
                     let number: i32 = number_str.parse().map_err(|_| "Unable to parse number")?;
-                    tokens.push(Self::Number(number))
+                    tokens.push(Self::Number(number));
+                    pos = pos_range.1;
                 }
                 _ => return Err("invalid token".to_string()),
             }
@@ -35,6 +45,7 @@ impl Token {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Packet {
     items: Vec<PacketItem>,
 }
@@ -44,8 +55,27 @@ impl Packet {
         Packet { items }
     }
 
-    pub fn build_from_tokens(tokens: &mut Vec<Token>) -> Result<Packet, String> {
-        Ok(Packet { items: vec![] })
+    pub fn build_from_tokens(tokens: &mut Vec<Token>) -> Result<Self, String> {
+        let mut items = Vec::new();
+        // Opening bracket.
+        match tokens[0] {
+            Token::LB => tokens.remove(0),
+            _ => return Err("Expected LB".to_string()),
+        };
+        loop {
+            match tokens.remove(0) {
+                Token::Comma => continue,
+                Token::Number(n) => {
+                    items.push(PacketItem::Number(n));
+                }
+                Token::LB => {
+                    let inner_packet = Self::build_from_tokens(tokens)?;
+                    items.push(PacketItem::Packet(inner_packet));
+                }
+                Token::RB => break,
+            }
+        }
+        Ok(Packet { items })
     }
 
     pub fn build_from_text(text: &str) -> Result<Packet, String> {
@@ -54,6 +84,7 @@ impl Packet {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum PacketItem {
     Number(i32),
     Packet(Packet),
@@ -71,7 +102,13 @@ impl Display for PacketItem {
 impl Display for Packet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
+        let mut first = true;
         for item in &self.items {
+            if !first {
+                write!(f, ",")?;
+            } else {
+                first = false
+            }
             write!(f, "{}", item)?;
         }
         write!(f, "]")
@@ -98,5 +135,20 @@ mod tests {
         assert_eq!(tokens, vec![Token::LB, Token::Number(1), Token::Comma, Token::Number(2), Token::Comma, Token::Number(3), Token::RB]);
         let tokens = Token::tokenize("2,12][").unwrap();
         assert_eq!(tokens, vec![Token::Number(2), Token::Comma, Token::Number(12), Token::RB, Token::LB]);
+    }
+    
+    #[test]
+    fn test_build_from_tokens() {
+        let text = "[1,2,3]";
+        let mut tokens = Token::tokenize(text).unwrap();
+        let packet = Packet::build_from_tokens(&mut tokens).unwrap();
+        let as_string = format!("{}", packet);
+        assert_eq!(as_string, text);
+
+        let text = "[1,[1],3]";
+        let mut tokens = Token::tokenize(text).unwrap();
+        let packet = Packet::build_from_tokens(&mut tokens).unwrap();
+        let as_string = format!("{}", packet);
+        assert_eq!(as_string, text);
     }
 }
