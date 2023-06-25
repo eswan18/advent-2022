@@ -34,12 +34,19 @@ impl CaveState {
         }
     }
 
+    pub fn drop_sand_until_blocked(&mut self) {
+        while !self.sand_at_rest.contains(&Position{x: 500, y: 0}) {
+            self.drop_sand();
+        }
+    }
+
     // Move one piece of sand down one step. Return false if there is no sand to move.
     fn update(&mut self) -> bool {
         if let Some(current_pos) = self.current_sand.take() {
             match current_pos {
                 // Check if we've fallen past the lowest blocker, in which case we're in the abyss.
-                Position{ x: _, y } if y > self.abyss_begins => {
+                // By waiting until the sand is 3 squares into the abyss, we let the sand settle on the cave "bottom" if we've added one.
+                Position{ x: _, y } if y > self.abyss_begins + 3 => {
                     self.in_abyss += 1;
                     return false;
                 },
@@ -73,5 +80,17 @@ impl CaveState {
 
     fn is_blocked(&self, p: Position) -> bool {
         self.cave.blockers.contains(&p) || self.sand_at_rest.contains(&p)
+    }
+
+    pub fn add_cave_bottom(&mut self) {
+        // Add an additional line of blockers at the bottom of the cave.
+        let lowest_y = self.cave.lowest_y().unwrap();
+        let min_x = self.cave.blockers.iter().map(|p| p.x).min().unwrap();
+        let max_x = self.cave.blockers.iter().map(|p| p.x).max().unwrap();
+        // Add blockers all along the bottom, with enough extra margin on each side to
+        // keep things from ever falling off the sides.
+        for x in (min_x - lowest_y - 1)..(max_x + lowest_y + 1) {
+            self.cave.blockers.insert(Position { x, y: lowest_y + 2 });
+        }
     }
 }
