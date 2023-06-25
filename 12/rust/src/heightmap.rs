@@ -1,13 +1,16 @@
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
+use std::collections::HashSet;
+
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct Point (char);
 
 #[derive(Debug)]
 pub struct HeightMap {
     points: Vec<Vec<Point>>,
     start_pos: Position,
+    end_pos: Position,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Position {
     x: usize,
     y: usize,
@@ -28,9 +31,11 @@ impl HeightMap {
             }
             points.push(row);
         }
-        let mut map = HeightMap { points , start_pos: Position{x: 0, y: 0}};
+        let mut map = HeightMap { points , start_pos: Position{x: 0, y: 0}, end_pos: Position{x: 0, y: 0}};
         let start_pos = map.find_start_pos()?;
         map.start_pos = start_pos;
+        let end_pos = map.find_end_pos()?;
+        map.end_pos = end_pos;
         Ok(map)
     }
 
@@ -43,6 +48,17 @@ impl HeightMap {
             }
         }
         Err(String::from("No start position found"))
+    }
+
+    fn find_end_pos(&self) -> Result<Position, String> {
+        for (y, row) in self.points.iter().enumerate() {
+            for (x, point) in row.iter().enumerate() {
+                if point == &Point('E') {
+                    return Ok(Position{x, y});
+                }
+            }
+        }
+        Err(String::from("No end position found"))
     }
 
     fn at(&self, pos: &Position) -> Option<&Point> {
@@ -90,6 +106,28 @@ impl HeightMap {
         };
         Ok((a_height + 1) >= b_height)
     }
+
+    pub fn find_shortest_path(&self) -> Result<usize, String> {
+        let starting_pos = self.start_pos.clone();
+        let mut seen_positions = HashSet::new();
+        seen_positions.insert(starting_pos);
+        self.dfs(seen_positions)
+    }
+
+    // Depth-first search, starting at S and going to E
+    fn dfs(&self, seen_positions: HashSet<Position>) -> Result<usize, String> {
+        if seen_positions.contains(&self.end_pos) {
+            return Ok(0);
+        }
+
+        let next_positions: HashSet<Position> = seen_positions
+            .iter()
+            .map(|p| self.viable_moves_from(p))
+            .flatten()
+            .filter(|p| !seen_positions.contains(p))
+            .collect();
+        self.dfs(next_positions).map(|n| n + 1)
+    }
 }
 
 #[cfg(test)]
@@ -106,6 +144,8 @@ mod tests {
         assert_eq!(map.at(&Position{x: 0, y: 2}), Some(&Point('g')));
         assert_eq!(map.at(&Position{x: 3, y: 2}), None);
         assert_eq!(map.at(&Position{x: 0, y: 3}), None);
+        assert_eq!(map.start_pos, Position{x: 0, y: 0});
+        assert_eq!(map.end_pos, Position{x: 1, y: 1});
     }
 
     #[test]
