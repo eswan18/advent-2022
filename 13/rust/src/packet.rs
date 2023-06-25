@@ -1,49 +1,6 @@
+use crate::token::Token;
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum Token {
-    LB, // [
-    RB, // ]
-    Number(i32),
-    Comma, // ,
-}
-
-impl Token {
-    pub fn tokenize(text: &str) -> Result<Vec<Self>, String> {
-        let chars: Vec<char> = text.chars().collect();
-        let mut tokens = Vec::new();
-        let mut pos = 0;
-        while pos < chars.len() {
-            match chars[pos] {
-                '[' => {
-                    tokens.push(Token::LB);
-                    pos += 1;
-                }
-                ']' => {
-                    tokens.push(Token::RB);
-                    pos += 1;
-                }
-                ',' => {
-                    tokens.push(Token::Comma);
-                    pos += 1;
-                }
-                c if c.is_digit(10) => {
-                    let mut pos_range = (pos, pos + 1);
-                    // There could be more than just one digit; consume all of them.
-                    if pos_range.1 < chars.len() && chars[pos_range.1].is_digit(10) {
-                        pos_range.1 += 1;
-                    }
-                    let number_str: String = chars[pos_range.0..pos_range.1].iter().collect();
-                    let number: i32 = number_str.parse().map_err(|_| "Unable to parse number")?;
-                    tokens.push(Self::Number(number));
-                    pos = pos_range.1;
-                }
-                _ => return Err("invalid token".to_string()),
-            }
-        };
-        Ok(tokens)
-    }
-}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Packet {
@@ -86,10 +43,61 @@ impl Packet {
     }
 }
 
+impl Ord for Packet {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        for i in 0..(self.items.len().max(other.items.len())) {
+            let self_item = self.items.get(i);
+            let other_item = other.items.get(i);
+            match (self_item, other_item) {
+                (Some(self_item), Some(other_item)) => {
+                    let cmp = self_item.cmp(other_item);
+                    if cmp != std::cmp::Ordering::Equal {
+                        return cmp;
+                    }
+                }
+                (Some(_), None) => return std::cmp::Ordering::Greater,
+                (None, Some(_)) => return std::cmp::Ordering::Less,
+                (None, None) => return std::cmp::Ordering::Equal,
+            }
+            
+        }
+        std::cmp::Ordering::Equal
+    } 
+}
+
+impl PartialOrd for Packet {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other)) 
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum PacketItem {
     Number(i32),
     Packet(Packet),
+}
+
+impl Ord for PacketItem {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (PacketItem::Number(n1), PacketItem::Number(n2)) => n1.cmp(n2),
+            (PacketItem::Packet(p1), PacketItem::Packet(p2)) => p1.cmp(p2),
+            (PacketItem::Number(n), PacketItem::Packet(p)) => {
+                let n_as_packet = Packet::build_from_items(vec![PacketItem::Number(*n)]);
+                n_as_packet.cmp(p)
+            }
+            (PacketItem::Packet(p), PacketItem::Number(n)) => {
+                let n_as_packet = Packet::build_from_items(vec![PacketItem::Number(*n)]);
+                p.cmp(&n_as_packet)
+            }
+        }
+    }
+}
+
+impl PartialOrd for PacketItem {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Display for PacketItem {
@@ -131,13 +139,6 @@ mod tests {
         assert_eq!(format!("{}", p), "[[1]]");
     }
 
-    #[test]
-    fn test_tokenize() {
-        let tokens = Token::tokenize("[1,2,3]").unwrap();
-        assert_eq!(tokens, vec![Token::LB, Token::Number(1), Token::Comma, Token::Number(2), Token::Comma, Token::Number(3), Token::RB]);
-        let tokens = Token::tokenize("2,12][").unwrap();
-        assert_eq!(tokens, vec![Token::Number(2), Token::Comma, Token::Number(12), Token::RB, Token::LB]);
-    }
     
     #[test]
     fn test_build_from_tokens_simple() {
@@ -158,5 +159,46 @@ mod tests {
         let packet = Packet::build_from_text(text).unwrap();
         let as_string = format!("{}", packet);
         assert_eq!(as_string, text);
+    }
+
+    #[test]
+    fn test_packet_order_simple() {
+        let p1 = Packet::build_from_text("[1,2,3]").unwrap();
+        let p2 = Packet::build_from_text("[1,2,4]").unwrap();
+        assert!(p1 < p2);
+        assert!(p2 >= p1);
+        assert!(p2 >= p2);
+        assert!(p1 == p1);
+
+        let p1 = Packet::build_from_text("[1]").unwrap();
+        let p2 = Packet::build_from_text("[0,2,4]").unwrap();
+        assert!(p1 > p2);
+
+        let p1 = Packet::build_from_text("[0]").unwrap();
+        let p2 = Packet::build_from_text("[0,2,4]").unwrap();
+        assert!(p1 < p2);
+
+        let p1 = Packet::build_from_text("[7,7,7,7]").unwrap();
+        let p2 = Packet::build_from_text("[7,7,7]").unwrap();
+        assert!(p1 > p2);
+    }
+
+    #[test]
+    fn test_packet_order_nested() {
+        let p1 = Packet::build_from_text("[[4,4],4,4]").unwrap();
+        let p2 = Packet::build_from_text("[[4,4],4,4,4]").unwrap();
+        assert!(p1 < p2);
+
+        let p1 = Packet::build_from_text("[9]").unwrap();
+        let p2 = Packet::build_from_text("[[8,7,6]]").unwrap();
+        assert!(p1 > p2);
+
+        let p1 = Packet::build_from_text("[1,[2,[3,[4,[5,6,7]]]],8,9]").unwrap();
+        let p2 = Packet::build_from_text("[1,[2,[3,[4,[5,6,0]]]],8,9]").unwrap();
+        assert!(p1 > p2);
+
+        let p1 = Packet::build_from_text("[[[]]]").unwrap();
+        let p2 = Packet::build_from_text("[[]]").unwrap();
+        assert!(p1 > p2);
     }
 }
