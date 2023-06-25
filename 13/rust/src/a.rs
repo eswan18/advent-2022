@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::packet::Packet;
 
 pub fn main(contents: String) -> Result<String, String> {

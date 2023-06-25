@@ -22,7 +22,7 @@ I may eventually come back and do them in other languages.
 |  10 |     ** |      |   ** |
 |  11 |        |      |   ** |
 |  12 |        |      |   ** |
-|  13 |        |      |      |
+|  13 |        |      |   ** |
 |  14 |        |      |      |
 |  15 |        |      |      |
 |  16 |        |      |      |
