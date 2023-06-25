@@ -1,6 +1,7 @@
 mod a;
 mod b;
 mod cave;
+mod cave_state;
 
 enum Part { A, B }
 

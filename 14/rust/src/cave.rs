@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-struct Position {
-    x: i32,
-    y: i32,
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Position {
+    pub x: i32,
+    pub y: i32,
 }
 
 impl Position {
@@ -30,17 +30,12 @@ impl Position {
     }
 }
 
-struct Cave {
-    blockers: HashSet<Position>,
+#[derive(Debug)]
+pub struct Cave {
+    pub blockers: HashSet<Position>,
 }
 
 impl Cave {
-    fn new() -> Self {
-        Self {
-            blockers: HashSet::new(),
-        }
-    }
-
     pub fn build_from_text(text: &str) -> Result<Self, String> {
         let lines = text.lines();
         let mut blockers = HashSet::new();
@@ -74,6 +69,20 @@ impl Cave {
             })
             .collect::<Result<Vec<Position>, String>>()?;
         Ok(position_strs)
+    }
+
+    pub fn lowest_y(&self) -> Option<i32> {
+        let mut lowest: Option<i32> = None;
+        for blocker in &self.blockers {
+            if let Some(lowest_y) = lowest {
+                if blocker.y > lowest_y {
+                    lowest = Some(blocker.y);
+                }
+            } else {
+                lowest = Some(blocker.y);
+            }
+        }
+        lowest
     }
 }
 
