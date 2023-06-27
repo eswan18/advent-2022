@@ -1,4 +1,3 @@
-use std::cmp;
 use std::fmt::Display;
 use std::collections::HashSet;
 
@@ -22,6 +21,7 @@ impl Grid {
     }
 
     fn min_and_max_coords(&self) -> (Position, Position) {
+        println!("Calculating min and max coords...");
         let sensors = self.sensors();
         let beacons = self.beacons();
         let excluded = self.excluded_positions();
@@ -45,6 +45,20 @@ impl Grid {
         }
         (Position{ x: min_x, y: min_y }, Position{ x: max_x, y: max_y })
     }
+    
+    pub fn excluded_count_in_row(&self, y: i32) -> i32 {
+        println!("In excluded_count_in_row...");
+        let sensors_and_beacons: HashSet<&Position> = self.sensors().into_iter().chain(self.beacons().into_iter()).collect();
+        let excluded = self.excluded_positions();
+        let mut count = 0;
+        excluded.iter().for_each(|e| {
+            // Check if the value is in the right row and also isn't a sensor or beacon.
+            if e.y == y && !sensors_and_beacons.contains(e){
+                count += 1;
+            }
+        });
+        count
+    }
 }
 
 impl Display for Grid {
@@ -64,7 +78,7 @@ impl Display for Grid {
         }
         write!(f, "\n")?;
         for y in min_y..=max_y {
-            print!("{: >8}", y);
+            write!(f, "{: >8}", y)?;
             for x in min_x..=max_x {
                 let position = Position{ x, y };
                 let sensor = sensors.contains(&position);
@@ -89,16 +103,21 @@ impl Display for Grid {
 
 impl Grid {
     pub fn build_from_text(text: &str) -> Result<Grid, String> {
+        println!("Parsing...");
         let mut readings = Vec::new();
         for line in text.lines() {
             let reading = Reading::build_from_line(line)?;
             readings.push(reading);
         }
+        println!("Done parsing.");
         Ok(Grid { readings })
     }
 
     fn excluded_positions(&self) -> HashSet<Position> {
-        self.readings.iter().map(|r| r.excluded_positions()).flatten().collect()
+        println!("Grid.excluded_positions ->");
+        let e = self.readings.iter().map(|r| r.excluded_positions()).flatten().collect();
+        println!("Done");
+        e
     }
 }
 
@@ -119,6 +138,7 @@ impl Reading {
 
     // Get all the positions that we can rule out as having a beacon.
     pub fn excluded_positions(&self) -> HashSet<Position> {
+        println!("Reading.excluded_positions ->");
         let mut excluded = HashSet::new();
         let x_range = self.sensor.x - self.distance..=self.sensor.x + self.distance;
         let y_range = self.sensor.y - self.distance..=self.sensor.y + self.distance;
@@ -130,6 +150,7 @@ impl Reading {
                 }
             }
         }
+        println!("Done.");
         excluded
     }
 }
@@ -144,7 +165,6 @@ impl Reading {
     pub fn build_from_line(text: &str) -> Result<Reading, String> {
         // Readings look like: "Sensor at x=2, y=18: closest beacon is at x=-2, y=15"
         let text = text.trim();
-        println!("text: {}", text);
         let re = Regex::new(r"x=(-?[\d]+), y=(-?[\d]+).*x=([-?\d]+), y=(-?[\d]+)").unwrap();
         let captures = re.captures(text).ok_or(format!("didn't match text: '{}'", text))?;
         let sensor_x = captures.get(1).unwrap().as_str().parse::<i32>().map_err(|_| "bad parse")?;
