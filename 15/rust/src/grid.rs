@@ -53,7 +53,18 @@ impl Display for Grid {
         let beacons = self.beacons();
         let excluded = self.excluded_positions();
         let (Position{ x: min_x, y: min_y }, Position{ x: max_x, y: max_y }) = self.min_and_max_coords();
+        // Print our numbers across the top before starting the loop proper.
+        write!(f, "        ")?;
+        for x in min_x..=max_y {
+            if x <= 9 && x >= 0 {
+                write!(f, "{}", x)?;
+            } else {
+                write!(f, " ")?;
+            }
+        }
+        write!(f, "\n")?;
         for y in min_y..=max_y {
+            print!("{: >8}", y);
             for x in min_x..=max_x {
                 let position = Position{ x, y };
                 let sensor = sensors.contains(&position);
@@ -66,7 +77,7 @@ impl Display for Grid {
                 } else if excluded {
                     write!(f, "#")?;
                 } else {
-                    write!(f, " ")?;
+                    write!(f, ".")?;
                 }
             }
             write!(f, "\n")?;
@@ -113,7 +124,10 @@ impl Reading {
         let y_range = self.sensor.y - self.distance..=self.sensor.y + self.distance;
         for x in x_range {
             for y in y_range.clone() {
-                excluded.insert(Position { x, y });
+                let p = Position{ x, y };
+                if manhattan(&p, &self.sensor) <= self.distance {
+                    excluded.insert(Position { x, y });
+                }
             }
         }
         excluded
