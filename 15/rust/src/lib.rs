@@ -2,7 +2,10 @@ mod a;
 mod b;
 mod grid;
 
-enum Part { A, B }
+enum Part {
+    A,
+    B,
+}
 
 impl Part {
     fn from_str(s: &str) -> Result<Part, String> {
@@ -33,8 +36,8 @@ fn parse_args(raw_args: std::env::Args) -> Result<Args, String> {
 pub fn run(args: std::env::Args) -> Result<(), String> {
     let args = parse_args(args)?;
 
-    let contents = std::fs::read_to_string(args.input_file)
-        .map_err(|e: std::io::Error| e.to_string())?;
+    let contents =
+        std::fs::read_to_string(args.input_file).map_err(|e: std::io::Error| e.to_string())?;
 
     let answer: String = match args.part {
         Part::A => a::main(contents)?,
