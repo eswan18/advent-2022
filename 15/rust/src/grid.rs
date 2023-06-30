@@ -21,56 +21,37 @@ impl Grid {
     }
 
     fn min_and_max_coords(&self) -> (Position, Position) {
-        println!("Calculating min and max coords...");
-        let sensors = self.sensors();
-        let beacons = self.beacons();
-        let excluded = self.excluded_positions();
-        let excluded: HashSet<&Position> = excluded.iter().collect();
-        let all_positions = sensors.iter().chain(beacons.iter()).chain(excluded.iter());
-
-        let (mut min_x, mut max_x, mut min_y, mut max_y) = (0, 0, 0, 0);
-        for p in all_positions {
-            if p.x < min_x {
-                min_x = p.x
+        let readings = &self.readings;
+        let mut min_x = 0;
+        let mut max_x = 0;
+        let mut min_y = 0;
+        let mut max_y = 0;
+        for r in readings {
+            let r_min_x = r.sensor.x - r.distance;
+            let r_max_x = r.sensor.x + r.distance;
+            let r_min_y = r.sensor.y - r.distance;
+            let r_max_y = r.sensor.y + r.distance;
+            if r_min_x < min_x {
+                min_x = r_min_x;
             }
-            if p.x > max_x {
-                max_x = p.x
+            if r_max_x > max_x {
+                max_x = r_max_x;
             }
-            if p.y < min_y {
-                min_y = p.y
+            if r_min_y < min_y {
+                min_y = r_min_y;
             }
-            if p.y > max_y {
-                max_y = p.y
+            if r_max_y > max_y {
+                max_y = r_max_y;
             }
         }
-        (
-            Position { x: min_x, y: min_y },
-            Position { x: max_x, y: max_y },
-        )
-    }
-
-    pub fn excluded_count_in_row(&self, y: i32) -> i32 {
-        let sensors_and_beacons: HashSet<&Position> = self
-            .sensors()
-            .into_iter()
-            .chain(self.beacons().into_iter())
-            .collect();
-        let excluded = self.excluded_positions();
-        let mut count = 0;
-        excluded.iter().for_each(|e| {
-            // Check if the value is in the right row and also isn't a sensor or beacon.
-            if e.y == y && !sensors_and_beacons.contains(e) {
-                count += 1;
-            }
-        });
-        count
+        (Position{ x: min_x, y: min_y }, Position{ x: max_x, y: max_y })
     }
 
     fn greatest_reading_distance(&self) -> i32 {
         self.readings.iter().map(|r| r.distance).max().unwrap()
     }
 
-    pub fn excluded_count_in_row_fast(&self, y: i32) -> i32 {
+    pub fn excluded_count_in_row(&self, y: i32) -> i32 {
         // A more performant version of the above function.
         // Start at the left-most point plus the greatest distance of any reading, and go to the
         // right-most point plus the greatest distance of any reading.
@@ -80,12 +61,10 @@ impl Grid {
         let min_x = min_x - max_distance;
         let max_x = max_x + max_distance;
         let mut excluded = vec![];
-        println!("min_x: {}, max_x: {}", min_x, max_x);
         'x_loop: for x in min_x..=max_x {
             let position = Position{ x, y };
             for r in &self.readings {
                 if manhattan(&position, &r.sensor) <= r.distance {
-                    println!("okay found one.");
                     // This position is within range of a sensor, so it's excluded.
                     excluded.push(position);
                     continue 'x_loop;
@@ -259,7 +238,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_excluded_count_in_row() {
+    fn test_excluded_count_in_row_fast() {
         let text = "Sensor at x=2, y=18: closest beacon is at x=-2, y=15
         Sensor at x=9, y=16: closest beacon is at x=10, y=16
         Sensor at x=13, y=2: closest beacon is at x=15, y=3
@@ -279,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn test_excluded_count_in_row_fast() {
+    fn test_min_and_max_coords_fast() {
         let text = "Sensor at x=2, y=18: closest beacon is at x=-2, y=15
         Sensor at x=9, y=16: closest beacon is at x=10, y=16
         Sensor at x=13, y=2: closest beacon is at x=15, y=3
@@ -295,6 +274,8 @@ mod tests {
         Sensor at x=14, y=3: closest beacon is at x=15, y=3
         Sensor at x=20, y=1: closest beacon is at x=15, y=3";
         let grid = Grid::build_from_text(text).unwrap();
-        assert_eq!(26, grid.excluded_count_in_row_fast(10));
+        let (p1, p2) = grid.min_and_max_coords();
+        assert_eq!(Position { x: -8, y: -10 }, p1);
+        assert_eq!(Position { x: 28, y: 26 }, p2);
     }
 }
