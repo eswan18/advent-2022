@@ -1,4 +1,3 @@
-use std::clone;
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -144,32 +143,6 @@ impl Grid {
         e
     }
     
-    pub fn open_spaces_with_max_coord(&self, max_coord: i32) -> Vec<Position> {
-        let mut open_spaces = Vec::new();
-        for x in 0..=max_coord {
-            if x % 100 == 0 {
-                println!("Checking x = {}", x);
-            }
-            for y in 0..=max_coord {
-                let position = Position { x, y };
-                if self.is_open_space(&position) {
-                    println!("Found open space at {:?}", position);
-                    open_spaces.push(position);
-                }
-            }
-        }
-        open_spaces
-    }
-
-    fn is_open_space(&self, position: &Position) -> bool {
-        let readings = &self.readings;
-        for r in readings {
-            if manhattan(&r.sensor, position) <= r.distance {
-                return false;
-            }
-        }
-        true
-    }
 }
 
 #[derive(Debug)]
