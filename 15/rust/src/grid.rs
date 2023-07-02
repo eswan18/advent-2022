@@ -210,7 +210,7 @@ impl Reading {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
