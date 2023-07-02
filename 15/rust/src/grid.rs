@@ -1,14 +1,15 @@
+use std::clone;
 use std::collections::HashSet;
 use std::fmt::Display;
 
 use regex::Regex;
 
-fn manhattan(p1: &Position, p2: &Position) -> i32 {
+pub fn manhattan(p1: &Position, p2: &Position) -> i32 {
     (p1.x - p2.x).abs() + (p1.y - p2.y).abs()
 }
 
 pub struct Grid {
-    readings: Vec<Reading>,
+    pub readings: Vec<Reading>,
 }
 
 impl Grid {
@@ -172,12 +173,12 @@ impl Grid {
 }
 
 #[derive(Debug)]
-struct Reading {
-    sensor: Position,
+pub struct Reading {
+    pub sensor: Position,
     // The closest beacon to this sensor.
     beacon: Position,
     // The manhattan distance between them.
-    distance: i32,
+    pub distance: i32,
 }
 
 impl Reading {
@@ -209,7 +210,7 @@ impl Reading {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Position {
     pub x: i32,
     pub y: i32,

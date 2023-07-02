@@ -1,6 +1,7 @@
 mod a;
 mod b;
 mod grid;
+mod shape;
 
 enum Part {
     A,
