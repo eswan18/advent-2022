@@ -26,10 +26,19 @@ impl GameState {
     pub fn maximize_flow(&self) -> usize {
         let mut all_flows = self.all_flows();
         all_flows.sort_by(|a, b| a.flow.cmp(&b.flow));
-        all_flows.last().unwrap().flow
+        let max_flow = all_flows.last().unwrap();
+        println!("{}", max_flow);
+        max_flow.flow
     }
 
     pub fn all_flows(&self) -> Vec<GameState> {
+        let mut the_one = false;
+        if self.players[0].path == vec!["AA", "JJ", "BB", "CC"] {
+            if self.players[1].path == vec!["AA", "DD", "HH"] {
+                println!("We really care about this one.");
+                the_one = true;
+            }
+        }
         // Return if we've run out of steps.
         if self.steps_remaining <= 0 {
             return vec![self.clone()];
@@ -54,6 +63,10 @@ impl GameState {
                             .any(|p| p.owned_valves().contains(destination))
                     })
                     .collect();
+                if potential_steps.is_empty() {
+                    //println!("We are in the process of turning on one of the valves but the other player is blocked. We should continue.");
+                    break;
+                }
                 let potential_game_states: Vec<GameState> = potential_steps
                     .into_iter()
                     .map(|(destination, distance)| {
@@ -84,10 +97,15 @@ impl GameState {
             .players
             .iter()
             .map(|p| {
-                p.take_step(
-                    new_game_state.steps_remaining,
-                    &new_game_state.distance_matrix,
-                )
+                match p.intention {
+                    PlayerIntention::None => p.clone(),
+                    _ => {
+                        p.take_step(
+                            new_game_state.steps_remaining,
+                            &new_game_state.distance_matrix,
+                        )
+                    }
+                }
             })
             .collect();
         // Update the game state's flow count.
