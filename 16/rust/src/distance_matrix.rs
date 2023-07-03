@@ -12,10 +12,10 @@ struct Path {
     flow: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DistanceMatrix {
     matrix: HashMap<String, HashMap<String, usize>>,
-    valves: HashMap<String, Valve>,
+    pub valves: HashMap<String, Valve>,
 }
 
 impl DistanceMatrix {
@@ -137,11 +137,11 @@ impl DistanceMatrix {
             .collect() 
     }
 
-    fn flow_at(&self, name: &str) -> usize {
+    pub fn flow_at(&self, name: &str) -> usize {
         self.valves[name].rate
     }
 
-    fn paths_from(&self, name: &str) -> HashMap<String, usize> {
+    pub fn paths_from(&self, name: &str) -> HashMap<String, usize> {
         self.matrix[name].clone()
     }
 }
