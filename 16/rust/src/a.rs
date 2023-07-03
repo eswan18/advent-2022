@@ -1,5 +1,5 @@
 use crate::parse;
-use crate::valve::{Valve, DistanceMatrix};
+use crate::valve::DistanceMatrix;
 
 pub fn main(contents: String) -> Result<String, String> {
     let valves = parse::parse(contents)?;

@@ -111,13 +111,11 @@ impl DistanceMatrix {
 
     fn maximize_flow_recursive(&self, at: &str, seen: &Vec<String>, flow: usize, steps_taken: usize) -> usize {
         if seen.len() == self.valves.len() {
-            println!("Encountered all valves. Finished path with flow {}", flow);
-            println!("Seen: {:?}", seen);
+            println!("Encountered all valves. Finished path {:?} with flow {}", seen, flow);
             return flow;
         }
         if steps_taken >= STEPS {
-            println!("Ran out of steps. Finished path with flow {}", flow);
-            println!("Seen: {:?}", seen);
+            println!("Ran out of steps. Finished path {:?} with flow {}", seen, flow);
             return flow;
         }
         let mut potential_steps: Vec<(String, usize)> = self
@@ -126,8 +124,7 @@ impl DistanceMatrix {
             .filter(|(name, _)| !seen.contains(name))
             .collect();
         if potential_steps.len() == 0 {
-            println!("Hit a dead end. Finished path with flow {}", flow);
-            println!("Seen: {:?}", seen);
+            println!("Hit dead end. Finished path {:?} with flow {}", seen, flow);
             return flow;
         }
         // Sort by distance, ascending.
@@ -138,6 +135,10 @@ impl DistanceMatrix {
             seen.push(destination.clone());
             // Account for both the distance traveled and the time spent turning on the valve.
             let steps_taken = steps_taken + distance + 1;
+            if steps_taken > STEPS {
+                println!("Ran out of steps. Finished path {:?} with flow {}", seen, flow);
+                return flow;
+            }
             let steps_remaining = STEPS - steps_taken;
             let flow = flow + self.flow_at(&destination) * steps_remaining;
             let total_flow = self.maximize_flow_recursive(&destination, &seen, flow, steps_taken);
