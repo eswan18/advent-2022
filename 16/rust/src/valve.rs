@@ -1,4 +1,3 @@
-use core::panic;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
@@ -106,48 +105,45 @@ impl DistanceMatrix {
     }
 
     pub fn maximize_flow(&self) -> usize {
-        self.maximize_flow_recursive(STARTING_VALVE, &vec![], 0, 0)
+        let mut all_flows = self.all_flows(STARTING_VALVE, &vec![], 0, 0);
+        all_flows.sort_by(|(_, flow_a), (_, flow_b)| flow_a.cmp(flow_b));
+        all_flows.last().unwrap().1
     }
 
-    fn maximize_flow_recursive(&self, at: &str, seen: &Vec<String>, flow: usize, steps_taken: usize) -> usize {
+    fn all_flows(&self, at: &str, seen: &Vec<String>, flow: usize, steps_taken: usize) -> Vec<(Vec<String>, usize)> {
         if seen.len() == self.valves.len() {
             println!("Encountered all valves. Finished path {:?} with flow {}", seen, flow);
-            return flow;
+            return vec![(seen.clone(), flow)];
         }
         if steps_taken >= STEPS {
             println!("Ran out of steps. Finished path {:?} with flow {}", seen, flow);
-            return flow;
+            return vec![(seen.clone(), flow)];
         }
-        let mut potential_steps: Vec<(String, usize)> = self
+        let potential_steps: Vec<(String, usize)> = self
             .paths_from(&at)
             .into_iter()
             .filter(|(name, _)| !seen.contains(name))
             .collect();
         if potential_steps.len() == 0 {
             println!("Hit dead end. Finished path {:?} with flow {}", seen, flow);
-            return flow;
+            return vec![(seen.clone(), flow)];
         }
-        // Sort by distance, ascending.
-        potential_steps.sort_by(|(_, a), (_, b)| a.cmp(b));
-        let mut total_flows = vec![];
-        for (destination, distance) in potential_steps {
-            let mut seen = seen.clone();
-            seen.push(destination.clone());
-            // Account for both the distance traveled and the time spent turning on the valve.
-            let steps_taken = steps_taken + distance + 1;
-            if steps_taken > STEPS {
-                println!("Ran out of steps. Finished path {:?} with flow {}", seen, flow);
-                return flow;
-            }
-            let steps_remaining = STEPS - steps_taken;
-            let flow = flow + self.flow_at(&destination) * steps_remaining;
-            let total_flow = self.maximize_flow_recursive(&destination, &seen, flow, steps_taken);
-            total_flows.push(total_flow);
-        }
-        match total_flows.into_iter().max() {
-            Some(max) => max,
-            None => panic!("No flows found"),
-        }
+        potential_steps
+            .into_iter()
+            .map(|(destination, distance)| {
+                let mut seen = seen.clone();
+                seen.push(destination.clone());
+                // Account for both the distance traveled and the time spent turning on the valve.
+                let steps_taken = steps_taken + distance + 1;
+                if steps_taken > STEPS {
+                    return vec![(seen, flow)];
+                }
+                let steps_remaining = STEPS - steps_taken;
+                let flow = flow + self.flow_at(&destination) * steps_remaining;
+                self.all_flows(&destination, &seen, flow, steps_taken)
+            })
+            .flatten()
+            .collect() 
     }
 
     fn flow_at(&self, name: &str) -> usize {
