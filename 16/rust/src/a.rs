@@ -1,5 +1,5 @@
 use crate::parse;
-use crate::valve::DistanceMatrix;
+use crate::distance_matrix::DistanceMatrix;
 
 const STEPS: usize = 30;
 

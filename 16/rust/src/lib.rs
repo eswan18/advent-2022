@@ -2,6 +2,7 @@ mod a;
 mod b;
 mod parse;
 mod valve;
+mod distance_matrix;
 
 enum Part { A, B }
 
