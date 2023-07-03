@@ -2,7 +2,8 @@ mod a;
 mod b;
 mod distance_matrix;
 mod parse;
-mod state;
+mod game_state;
+mod player_state;
 mod valve;
 
 enum Part {
