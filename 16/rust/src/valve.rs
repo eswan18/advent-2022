@@ -4,7 +4,6 @@ use std::{
 };
 
 const STARTING_VALVE: &str = "AA";
-const STEPS: usize = 30;
 
 #[derive(Debug, Clone)]
 pub struct Valve {
@@ -104,18 +103,18 @@ impl DistanceMatrix {
         DistanceMatrix { matrix, valves }
     }
 
-    pub fn maximize_flow(&self) -> usize {
-        let mut all_flows = self.all_flows(STARTING_VALVE, &vec![], 0, 0);
+    pub fn maximize_flow(&self, max_steps: usize) -> usize {
+        let mut all_flows = self.all_flows(STARTING_VALVE, &vec![], 0, 0, max_steps);
         all_flows.sort_by(|(_, flow_a), (_, flow_b)| flow_a.cmp(flow_b));
         all_flows.last().unwrap().1
     }
 
-    fn all_flows(&self, at: &str, seen: &Vec<String>, flow: usize, steps_taken: usize) -> Vec<(Vec<String>, usize)> {
+    fn all_flows(&self, at: &str, seen: &Vec<String>, flow: usize, steps_taken: usize, max_steps: usize) -> Vec<(Vec<String>, usize)> {
         if seen.len() == self.valves.len() {
             println!("Encountered all valves. Finished path {:?} with flow {}", seen, flow);
             return vec![(seen.clone(), flow)];
         }
-        if steps_taken >= STEPS {
+        if steps_taken >= max_steps {
             println!("Ran out of steps. Finished path {:?} with flow {}", seen, flow);
             return vec![(seen.clone(), flow)];
         }
@@ -135,12 +134,12 @@ impl DistanceMatrix {
                 seen.push(destination.clone());
                 // Account for both the distance traveled and the time spent turning on the valve.
                 let steps_taken = steps_taken + distance + 1;
-                if steps_taken > STEPS {
+                if steps_taken > max_steps {
                     return vec![(seen, flow)];
                 }
-                let steps_remaining = STEPS - steps_taken;
+                let steps_remaining = max_steps - steps_taken;
                 let flow = flow + self.flow_at(&destination) * steps_remaining;
-                self.all_flows(&destination, &seen, flow, steps_taken)
+                self.all_flows(&destination, &seen, flow, steps_taken, max_steps)
             })
             .flatten()
             .collect() 
