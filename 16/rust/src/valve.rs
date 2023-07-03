@@ -1,9 +1,11 @@
+use core::panic;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
 };
 
 const STARTING_VALVE: &str = "AA";
+const STEPS: usize = 30;
 
 #[derive(Debug, Clone)]
 pub struct Valve {
@@ -101,6 +103,58 @@ impl DistanceMatrix {
         }
 
         DistanceMatrix { matrix, valves }
+    }
+
+    pub fn maximize_flow(&self) -> usize {
+        self.maximize_flow_recursive(STARTING_VALVE, &vec![], 0, 0)
+    }
+
+    fn maximize_flow_recursive(&self, at: &str, seen: &Vec<String>, flow: usize, steps_taken: usize) -> usize {
+        if seen.len() == self.valves.len() {
+            println!("Encountered all valves. Finished path with flow {}", flow);
+            println!("Seen: {:?}", seen);
+            return flow;
+        }
+        if steps_taken >= STEPS {
+            println!("Ran out of steps. Finished path with flow {}", flow);
+            println!("Seen: {:?}", seen);
+            return flow;
+        }
+        let mut potential_steps: Vec<(String, usize)> = self
+            .paths_from(&at)
+            .into_iter()
+            .filter(|(name, _)| !seen.contains(name))
+            .collect();
+        if potential_steps.len() == 0 {
+            println!("Hit a dead end. Finished path with flow {}", flow);
+            println!("Seen: {:?}", seen);
+            return flow;
+        }
+        // Sort by distance, ascending.
+        potential_steps.sort_by(|(_, a), (_, b)| a.cmp(b));
+        let mut total_flows = vec![];
+        for (destination, distance) in potential_steps {
+            let mut seen = seen.clone();
+            seen.push(destination.clone());
+            // Account for both the distance traveled and the time spent turning on the valve.
+            let steps_taken = steps_taken + distance + 1;
+            let steps_remaining = STEPS - steps_taken;
+            let flow = flow + self.flow_at(&destination) * steps_remaining;
+            let total_flow = self.maximize_flow_recursive(&destination, &seen, flow, steps_taken);
+            total_flows.push(total_flow);
+        }
+        match total_flows.into_iter().max() {
+            Some(max) => max,
+            None => panic!("No flows found"),
+        }
+    }
+
+    fn flow_at(&self, name: &str) -> usize {
+        self.valves[name].rate
+    }
+
+    fn paths_from(&self, name: &str) -> HashMap<String, usize> {
+        self.matrix[name].clone()
     }
 }
 
