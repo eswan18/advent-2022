@@ -110,12 +110,12 @@ impl DistanceMatrix {
     }
 
     pub fn maximize_flow(&self, max_steps: usize) -> usize {
-        let mut all_flows = self.all_flows(STARTING_VALVE, Path{valves: vec![], flow: 0}, 0, max_steps);
+        let mut all_flows = self.all_flows(Path{valves: vec![], flow: 0}, 0, max_steps);
         all_flows.sort_by(|p1, p2| p1.flow.cmp(&p2.flow));
         all_flows.last().unwrap().flow
     }
 
-    fn all_flows(&self, at: &str, path: Path, steps_taken: usize, max_steps: usize) -> Vec<Path> {
+    fn all_flows(&self, path: Path, steps_taken: usize, max_steps: usize) -> Vec<Path> {
         if path.valves.len() == self.valves.len() {
             println!("Encountered all valves. Finished path {:?} with flow {}", path.valves, path.flow);
             return vec![path];
@@ -124,6 +124,7 @@ impl DistanceMatrix {
             println!("Ran out of steps. Finished path {:?} with flow {}", path.valves, path.flow);
             return vec![path];
         }
+        let at = path.valves.last().map(|s| s.as_str()).unwrap_or(STARTING_VALVE);
         let potential_steps: Vec<(String, usize)> = self
             .paths_from(&at)
             .into_iter()
@@ -146,7 +147,7 @@ impl DistanceMatrix {
                 let steps_remaining = max_steps - steps_taken;
                 let flow = path.flow + self.flow_at(&destination) * steps_remaining;
                 let new_path = Path{valves: seen, flow};
-                self.all_flows(&destination, new_path, steps_taken, max_steps)
+                self.all_flows(new_path, steps_taken, max_steps)
             })
             .flatten()
             .collect() 
