@@ -69,6 +69,17 @@ impl PlayerState {
     pub fn position(&self) -> &String {
         self.path.last().unwrap()
     }
+
+    pub fn owned_valves(&self) -> HashSet<String> {
+        let mut valves: HashSet<String> = self.path.iter().cloned().collect();
+        if let PlayerIntention::TurningOn{valve} = &self.intention {
+            valves.insert(valve.clone());
+        }
+        if let PlayerIntention::Moving(next_move) = &self.intention {
+            valves.insert(next_move.destination.clone());
+        }
+        valves
+    }
 }
 
 /// An intended move is a move that a player has planned/begun but hasn't finished yet.
@@ -105,7 +116,8 @@ impl GameState {
 
     pub fn all_flows(&self) -> Vec<GameState> {
         // Return if we've run out of steps.
-        if self.steps_remaining == 0 {
+        if self.steps_remaining <= 0 {
+            println!("{:?}", self.players[0].path);
             return vec![self.clone()];
         }
         // Return if we've visited every valve.
@@ -124,23 +136,13 @@ impl GameState {
                     .filter(|(destination, _)| {
                         !self.players
                             .iter()
-                            .any(|p| {
-                                if p.path.contains(destination) {
-                                    return true;
-                                }
-                                match &p.intention {
-                                    PlayerIntention::Moving(IntendedMove { destination: d, .. }) if d == destination => {
-                                        return true;
-                                    },
-                                    PlayerIntention::TurningOn{valve} if valve == destination  => {
-                                        return true;
-                                    },
-                                    _ => {},
-                                }
-                                false
-                            })
+                            .any(|p| p.owned_valves().contains(destination))
                     })
                     .collect();
+                if potential_steps.is_empty() {
+                    // If there are no possible steps, then we can't do anything.
+                    return vec![self.clone()];
+                }
                 let potential_game_states: Vec<GameState> = potential_steps
                     .into_iter()
                     .map(|(destination, distance)| {
