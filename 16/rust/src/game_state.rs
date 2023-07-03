@@ -35,10 +35,12 @@ impl GameState {
     pub fn all_flows(&self) -> Vec<GameState> {
         // Return if we've run out of steps.
         if self.steps_remaining <= 0 {
+            println!("{}", self.flow);
             return vec![self.clone()];
         }
         // Return if we've visited every valve.
         if self.enabled_valves().len() == self.distance_matrix.valves.len() {
+            println!("{}", self.flow);
             return vec![self.clone()];
         }
         // If any player has no intended move or valve to enable, then we can't actually take a step yet.
