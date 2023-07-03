@@ -22,6 +22,12 @@ impl Valve {
     }
 }
 
+#[derive(Debug, Clone)]
+struct Path {
+    valves: Vec<String>,
+    flow: usize,
+}
+
 #[derive(Debug)]
 pub struct DistanceMatrix {
     matrix: HashMap<String, HashMap<String, usize>>,
@@ -104,42 +110,43 @@ impl DistanceMatrix {
     }
 
     pub fn maximize_flow(&self, max_steps: usize) -> usize {
-        let mut all_flows = self.all_flows(STARTING_VALVE, &vec![], 0, 0, max_steps);
-        all_flows.sort_by(|(_, flow_a), (_, flow_b)| flow_a.cmp(flow_b));
-        all_flows.last().unwrap().1
+        let mut all_flows = self.all_flows(STARTING_VALVE, Path{valves: vec![], flow: 0}, 0, max_steps);
+        all_flows.sort_by(|p1, p2| p1.flow.cmp(&p2.flow));
+        all_flows.last().unwrap().flow
     }
 
-    fn all_flows(&self, at: &str, seen: &Vec<String>, flow: usize, steps_taken: usize, max_steps: usize) -> Vec<(Vec<String>, usize)> {
-        if seen.len() == self.valves.len() {
-            println!("Encountered all valves. Finished path {:?} with flow {}", seen, flow);
-            return vec![(seen.clone(), flow)];
+    fn all_flows(&self, at: &str, path: Path, steps_taken: usize, max_steps: usize) -> Vec<Path> {
+        if path.valves.len() == self.valves.len() {
+            println!("Encountered all valves. Finished path {:?} with flow {}", path.valves, path.flow);
+            return vec![path];
         }
         if steps_taken >= max_steps {
-            println!("Ran out of steps. Finished path {:?} with flow {}", seen, flow);
-            return vec![(seen.clone(), flow)];
+            println!("Ran out of steps. Finished path {:?} with flow {}", path.valves, path.flow);
+            return vec![path];
         }
         let potential_steps: Vec<(String, usize)> = self
             .paths_from(&at)
             .into_iter()
-            .filter(|(name, _)| !seen.contains(name))
+            .filter(|(name, _)| !path.valves.contains(name))
             .collect();
         if potential_steps.len() == 0 {
-            println!("Hit dead end. Finished path {:?} with flow {}", seen, flow);
-            return vec![(seen.clone(), flow)];
+            println!("Hit dead end. Finished path {:?} with flow {}", path.valves, path.flow);
+            return vec![path];
         }
         potential_steps
             .into_iter()
             .map(|(destination, distance)| {
-                let mut seen = seen.clone();
+                let mut seen = path.valves.clone();
                 seen.push(destination.clone());
                 // Account for both the distance traveled and the time spent turning on the valve.
                 let steps_taken = steps_taken + distance + 1;
                 if steps_taken > max_steps {
-                    return vec![(seen, flow)];
+                    return vec![Path{valves: seen, flow: path.flow}];
                 }
                 let steps_remaining = max_steps - steps_taken;
-                let flow = flow + self.flow_at(&destination) * steps_remaining;
-                self.all_flows(&destination, &seen, flow, steps_taken, max_steps)
+                let flow = path.flow + self.flow_at(&destination) * steps_remaining;
+                let new_path = Path{valves: seen, flow};
+                self.all_flows(&destination, new_path, steps_taken, max_steps)
             })
             .flatten()
             .collect() 
