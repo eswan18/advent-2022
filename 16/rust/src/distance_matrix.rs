@@ -1,8 +1,8 @@
+use crate::valve::Valve;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
 };
-use crate::valve::Valve;
 
 const STARTING_VALVE: &str = "AA";
 

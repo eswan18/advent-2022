@@ -1,5 +1,5 @@
-use crate::parse;
 use crate::distance_matrix::DistanceMatrix;
+use crate::parse;
 use crate::state::GameState;
 use std::rc::Rc;
 

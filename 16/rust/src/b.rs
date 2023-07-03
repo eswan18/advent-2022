@@ -1,7 +1,7 @@
-use std::rc::Rc;
-use crate::parse;
 use crate::distance_matrix::DistanceMatrix;
+use crate::parse;
 use crate::state::GameState;
+use std::rc::Rc;
 
 const STEPS: usize = 26;
 

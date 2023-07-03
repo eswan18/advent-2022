@@ -1,8 +1,7 @@
-use std::fmt::{Display, Formatter};
-use std::collections::HashSet;
-use std::rc::Rc;
 use crate::distance_matrix::DistanceMatrix;
-
+use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 const STARTING_VALVE: &str = "AA";
 
@@ -11,7 +10,7 @@ enum PlayerIntention {
     /// The player is moving to a new valve but hasn't arrived yet.
     Moving(IntendedMove),
     /// The player is turning on a valve.
-    TurningOn{valve: String},
+    TurningOn { valve: String },
     /// The player has no plan right now.
     None,
 }
@@ -32,7 +31,11 @@ impl PlayerState {
         }
     }
 
-    pub fn take_step(&self, steps_remaining: usize, distance_matrix: &DistanceMatrix) -> PlayerState {
+    pub fn take_step(
+        &self,
+        steps_remaining: usize,
+        distance_matrix: &DistanceMatrix,
+    ) -> PlayerState {
         match &self.intention {
             PlayerIntention::Moving(next_move) => {
                 let mut next_move = next_move.clone();
@@ -40,13 +43,15 @@ impl PlayerState {
                 next_move.moves_remaining -= 1;
                 // If we've arrived at the destination, stop moving and plan to turn on the valve the next turn.
                 if next_move.moves_remaining == 0 {
-                    new_player_state.intention = PlayerIntention::TurningOn { valve: next_move.destination.clone() };
+                    new_player_state.intention = PlayerIntention::TurningOn {
+                        valve: next_move.destination.clone(),
+                    };
                 } else {
                     new_player_state.intention = PlayerIntention::Moving(next_move);
                 }
                 new_player_state
-            },
-            PlayerIntention::TurningOn{valve} => {
+            }
+            PlayerIntention::TurningOn { valve } => {
                 let mut new_player_state = self.clone();
                 // If we turn on a valve, we get that valve's flow value for every remaining turn.
                 new_player_state.total_flow += steps_remaining * distance_matrix.flow_at(&valve);
@@ -54,8 +59,10 @@ impl PlayerState {
                 // We've finished turning on the valve, so we're done and have no plan anymore.
                 new_player_state.intention = PlayerIntention::None;
                 new_player_state
-            },
-            PlayerIntention::None => panic!("PlayerState::take_step called on player with no intention."),
+            }
+            PlayerIntention::None => {
+                panic!("PlayerState::take_step called on player with no intention.")
+            }
         }
     }
 
@@ -74,7 +81,7 @@ impl PlayerState {
 
     pub fn owned_valves(&self) -> HashSet<String> {
         let mut valves: HashSet<String> = self.path.iter().cloned().collect();
-        if let PlayerIntention::TurningOn{valve} = &self.intention {
+        if let PlayerIntention::TurningOn { valve } = &self.intention {
             valves.insert(valve.clone());
         }
         if let PlayerIntention::Moving(next_move) = &self.intention {
@@ -135,7 +142,8 @@ impl GameState {
                     .paths_from(&self.players[i].position())
                     .into_iter()
                     .filter(|(destination, _)| {
-                        !self.players
+                        !self
+                            .players
                             .iter()
                             .any(|p| p.owned_valves().contains(destination))
                     })
@@ -148,7 +156,7 @@ impl GameState {
                             PlayerIntention::Moving(IntendedMove {
                                 destination,
                                 moves_remaining: distance,
-                            })
+                            }),
                         );
                         new_game_state
                     })
@@ -166,9 +174,15 @@ impl GameState {
     pub fn take_step(&self) -> GameState {
         let mut new_game_state = self.clone();
         new_game_state.steps_remaining -= 1;
-        new_game_state.players = new_game_state.players
+        new_game_state.players = new_game_state
+            .players
             .iter()
-            .map(|p| p.take_step(new_game_state.steps_remaining, &new_game_state.distance_matrix))
+            .map(|p| {
+                p.take_step(
+                    new_game_state.steps_remaining,
+                    &new_game_state.distance_matrix,
+                )
+            })
             .collect();
         // Update the game state's flow count.
         new_game_state.flow = new_game_state.players.iter().map(|p| p.total_flow).sum();
@@ -176,27 +190,25 @@ impl GameState {
     }
 
     fn enabled_valves(&self) -> HashSet<&String> {
-        self
-            .players
-            .iter()
-            .map(|p| &p.path)
-            .flatten()
-            .collect()
+        self.players.iter().map(|p| &p.path).flatten().collect()
     }
-
 }
 
 impl Display for PlayerState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path.join("=>"))?;
         match &self.intention {
-            PlayerIntention::None => {},
+            PlayerIntention::None => {}
             PlayerIntention::Moving(next_move) => {
-                write!(f, " ->{} ({})", &next_move.destination, &next_move.moves_remaining)?;
-            },
-            PlayerIntention::TurningOn{valve} => {
+                write!(
+                    f,
+                    " ->{} ({})",
+                    &next_move.destination, &next_move.moves_remaining
+                )?;
+            }
+            PlayerIntention::TurningOn { valve } => {
                 write!(f, "  @{} (0/1)", &valve)?;
-            },
+            }
         }
         Ok(())
     }

@@ -5,7 +5,9 @@ use regex::Regex;
 
 pub fn parse(contents: String) -> Result<HashMap<String, Valve>, String> {
     let lines = contents.lines();
-    let valves = lines.map(|line| parse_line(String::from(line))).collect::<Result<Vec<Valve>, String>>()?;
+    let valves = lines
+        .map(|line| parse_line(String::from(line)))
+        .collect::<Result<Vec<Valve>, String>>()?;
     let valves: HashMap<String, Valve> = valves
         .into_iter()
         .map(|v| (v.name.clone(), v))
