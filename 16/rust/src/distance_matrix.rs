@@ -12,7 +12,7 @@ struct Path {
     flow: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DistanceMatrix {
     matrix: HashMap<String, HashMap<String, usize>>,
     pub valves: HashMap<String, Valve>,

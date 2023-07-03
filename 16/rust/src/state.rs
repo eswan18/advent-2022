@@ -1,10 +1,12 @@
-use std::{fmt::{Display, Formatter}, collections::HashSet};
-
+use std::fmt::{Display, Formatter};
+use std::collections::HashSet;
+use std::rc::Rc;
 use crate::distance_matrix::DistanceMatrix;
+
 
 const STARTING_VALVE: &str = "AA";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum PlayerIntention {
     /// The player is moving to a new valve but hasn't arrived yet.
     Moving(IntendedMove),
@@ -14,7 +16,7 @@ enum PlayerIntention {
     None,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct PlayerState {
     path: Vec<String>,
     total_flow: usize,
@@ -83,27 +85,27 @@ impl PlayerState {
 }
 
 /// An intended move is a move that a player has planned/begun but hasn't finished yet.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct IntendedMove {
     destination: String,
     moves_remaining: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GameState {
     players: Vec<PlayerState>,
     steps_remaining: usize,
-    distance_matrix: DistanceMatrix,
+    distance_matrix: Rc<DistanceMatrix>,
     flow: usize,
 }
 
 impl GameState {
-    pub fn new(n_players: usize, distance_matrix: &DistanceMatrix, steps: usize) -> GameState {
+    pub fn new(n_players: usize, distance_matrix: Rc<DistanceMatrix>, steps: usize) -> GameState {
         let players = (0..n_players).map(|_| PlayerState::new()).collect();
         GameState {
             players,
             steps_remaining: steps,
-            distance_matrix: distance_matrix.clone(),
+            distance_matrix: distance_matrix,
             flow: 0,
         }
     }
@@ -117,11 +119,10 @@ impl GameState {
     pub fn all_flows(&self) -> Vec<GameState> {
         // Return if we've run out of steps.
         if self.steps_remaining <= 0 {
-            println!("{:?}", self.players[0].path);
             return vec![self.clone()];
         }
         // Return if we've visited every valve.
-        if self.visited_valves().len() == self.distance_matrix.valves.len() {
+        if self.enabled_valves().len() == self.distance_matrix.valves.len() {
             return vec![self.clone()];
         }
         // If any player has no intended move or valve to enable, then we can't actually take a step yet.
@@ -139,18 +140,16 @@ impl GameState {
                             .any(|p| p.owned_valves().contains(destination))
                     })
                     .collect();
-                if potential_steps.is_empty() {
-                    // If there are no possible steps, then we can't do anything.
-                    return vec![self.clone()];
-                }
                 let potential_game_states: Vec<GameState> = potential_steps
                     .into_iter()
                     .map(|(destination, distance)| {
                         let mut new_game_state = self.clone();
-                        new_game_state.players[i] = new_game_state.players[i].with_new_intention(PlayerIntention::Moving(IntendedMove {
-                            destination,
-                            moves_remaining: distance,
-                        }));
+                        new_game_state.players[i] = new_game_state.players[i].with_new_intention(
+                            PlayerIntention::Moving(IntendedMove {
+                                destination,
+                                moves_remaining: distance,
+                            })
+                        );
                         new_game_state
                     })
                     .collect();
@@ -161,6 +160,10 @@ impl GameState {
             }
         }
         // If every player knows what they're doing, just advance them all one step.
+        self.take_step().all_flows()
+    }
+
+    pub fn take_step(&self) -> GameState {
         let mut new_game_state = self.clone();
         new_game_state.steps_remaining -= 1;
         new_game_state.players = new_game_state.players
@@ -169,10 +172,10 @@ impl GameState {
             .collect();
         // Update the game state's flow count.
         new_game_state.flow = new_game_state.players.iter().map(|p| p.total_flow).sum();
-        return new_game_state.all_flows();
+        new_game_state
     }
 
-    fn visited_valves(&self) -> HashSet<&String> {
+    fn enabled_valves(&self) -> HashSet<&String> {
         self
             .players
             .iter()
@@ -180,13 +183,31 @@ impl GameState {
             .flatten()
             .collect()
     }
+
+}
+
+impl Display for PlayerState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path.join("=>"))?;
+        match &self.intention {
+            PlayerIntention::None => {},
+            PlayerIntention::Moving(next_move) => {
+                write!(f, " ->{} ({})", &next_move.destination, &next_move.moves_remaining)?;
+            },
+            PlayerIntention::TurningOn{valve} => {
+                write!(f, "  @{} (0/1)", &valve)?;
+            },
+        }
+        Ok(())
+    }
 }
 
 impl Display for GameState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "GameState {{\n")?;
-        write!(f, "  players: {:?}\n", self.players)?;
-        write!(f, "  steps_remaining: {}\n", self.steps_remaining)?;
-        write!(f, "}}")
+        write!(f, "GameState ({} steps remaining)", self.steps_remaining)?;
+        for (player_id, path) in self.players.iter().enumerate() {
+            write!(f, "\n{}: {}", player_id, path)?;
+        }
+        Ok(())
     }
 }

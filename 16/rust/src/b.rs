@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use crate::parse;
 use crate::distance_matrix::DistanceMatrix;
 use crate::state::GameState;
@@ -9,7 +10,7 @@ pub fn main(contents: String) -> Result<String, String> {
     let distance_matrix = DistanceMatrix::new(valves);
     let distance_matrix = distance_matrix.with_valves_removed();
 
-    let state = GameState::new(2, &distance_matrix, STEPS);
+    let state = GameState::new(2, Rc::new(distance_matrix), STEPS);
     let answer = state.maximize_flow();
     Ok(answer.to_string())
 }
