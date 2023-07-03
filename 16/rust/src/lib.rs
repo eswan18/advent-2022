@@ -1,8 +1,8 @@
 mod a;
 mod b;
 mod distance_matrix;
-mod parse;
 mod game_state;
+mod parse;
 mod player_state;
 mod valve;
 

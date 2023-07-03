@@ -1,9 +1,8 @@
+use crate::distance_matrix::DistanceMatrix;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-use crate::distance_matrix::DistanceMatrix;
 
 const STARTING_VALVE: &str = "AA";
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayerIntention {
@@ -73,10 +72,6 @@ impl PlayerState {
         let mut new_player_state = self.clone();
         new_player_state.intention = intention;
         new_player_state
-    }
-
-    pub fn position(&self) -> &String {
-        self.path.last().unwrap()
     }
 
     pub fn owned_valves(&self) -> HashSet<String> {
