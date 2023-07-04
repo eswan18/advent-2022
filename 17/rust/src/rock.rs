@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use crate::point::Point;
 
-pub const DEFAULT_ROCK_TEXT: &str = "####
+const DEFAULT_ROCK_TEXT: &str = "####
 
 .#.
 ###
