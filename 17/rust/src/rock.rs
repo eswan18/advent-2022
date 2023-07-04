@@ -20,13 +20,13 @@ const DEFAULT_ROCK_TEXT: &str = "####
 ##";
 
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Rock {
     pub points: Vec<Point>,
 }
 
 impl Rock {
-    fn build_from_text(text: &str) -> Rock {
+    pub fn build_from_text(text: &str) -> Rock {
         let mut points = Vec::new();
         for (line_number, line) in text.lines().rev().enumerate() {
             let chars: Vec<char> = line.chars().collect();
@@ -78,6 +78,7 @@ impl Display for Rock {
 }
 
 /// Loops over a set of rocks and dispenses them in order, cycling back to the beginning as needed.
+#[derive(Clone)]
 pub struct RockDropper {
     rocks: Vec<Rock>,
     drop_count: usize,
@@ -139,7 +140,6 @@ mod tests {
         let text = DEFAULT_ROCK_TEXT;
         let rocks = Rock::build_multiple_from_text(text);
         assert_eq!(rocks.len(), 5);
-        print!("{}", rocks[2]);
         assert_eq!(rocks[0].points.len(), 4);
     }
 }
