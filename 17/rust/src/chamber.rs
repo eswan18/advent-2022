@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use crate::rock::{Rock, RockDropper};
 use crate::point::Point;
 
-const LOG: bool = true;
+const LOG: bool = false;
 const CHAMBER_WIDTH: i32 = 7;
 
 #[derive(Clone)]
@@ -57,7 +57,9 @@ impl Chamber {
             }
         }
         self.set_rocks.push(rock);
-        println!("{}", self);
+        if LOG {
+            println!("{}", self);
+        }
     }
 
     /// Push the rock one square in the direction of the jet if it isn't obstructed.
