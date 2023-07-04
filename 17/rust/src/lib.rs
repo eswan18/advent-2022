@@ -1,6 +1,8 @@
 mod a;
 mod b;
 mod rock;
+mod chamber;
+mod point;
 
 enum Part { A, B }
 

@@ -1,3 +1,7 @@
+use crate::chamber;
+
 pub fn main(contents: String) -> Result<String, String> {
-    Ok(String::from("TODO"))
+    let mut chamber = chamber::Chamber::new();
+    chamber.drop_rock();
+    Ok(format!("{}", chamber))
 }
