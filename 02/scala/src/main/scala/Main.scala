@@ -25,10 +25,10 @@ def runA(inputFile: String): Try[Int] =
     yield scores.sum
 
 def runB(inputFile: String): Try[Int] =
-    val lines = for
+    for
       lines <- linesFromFile(inputFile)
-    yield lines
-    Success(0)
+      scores = lines.map(ScenarioB.fromLine).map(_.score())
+    yield scores.sum
 
 def linesFromFile(inputFile: String): Try[Seq[Line]] =
   Try {
