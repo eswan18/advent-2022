@@ -10,6 +10,9 @@ object AssignmentPair:
 final case class Assignment(start: Int, end: Int):
     def contains(a: Assignment): Boolean =
         start <= a.start && end >= a.end
+    
+    def overlaps(a: Assignment): Boolean =
+        start <= a.end && end >= a.start
 
 object Assignment:
     def fromString(s: String): Assignment =
