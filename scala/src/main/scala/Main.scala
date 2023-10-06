@@ -18,6 +18,7 @@ import day04._
     val result = (args(0), args(1)) match
         case ("4", "a") => day04.runA(input)
         case ("4", "b") => day04.runB(input)
+        case ("5", "a") => day05.runA(input)
         case problem => Failure(new Exception("No such puzzle"))
 
     result match
