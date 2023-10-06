@@ -32,6 +32,10 @@ final case class CrateGrid(stacks: Vector[CrateStack]):
             newGrid = newGrid.move(instruction.fromStack, instruction.toStack, 1)
         }
         newGrid
+    
+    def takeInstructionInBulk(instruction: Instruction): CrateGrid =
+        // Move all the crates from instruction.fromStack to instruction.toStack
+        move(instruction.fromStack, instruction.toStack, instruction.count)
 
     
     def topCrates: Vector[Char] =
@@ -65,9 +69,20 @@ final case class GridWithInstructions(var grid: CrateGrid, instructions: Vector[
         grid.toString + "\n\n" + instructions.map { i => i.toString }.mkString("\n")
 
     def executeOneByOne(): Unit =
-        // Execute all the instructions against the grid)
         println(grid)
-        instructions.foreach { i => println(i); grid = grid.takeInstructionOneByOne(i); println(grid); () }
+        instructions.foreach { i =>
+            println(i)
+            grid = grid.takeInstructionOneByOne(i)
+            println(grid)
+        }
+
+    def executeInBulk(): Unit =
+        // Execute all the instructions against the grid)
+        instructions.foreach { i =>
+            println(i)
+            grid = grid.takeInstructionInBulk(i)
+            println(grid)
+        }
 
 object GridWithInstructions:
     def fromString(s: String): GridWithInstructions =

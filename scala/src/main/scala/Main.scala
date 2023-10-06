@@ -19,6 +19,7 @@ import day04._
         case ("4", "a") => day04.runA(input)
         case ("4", "b") => day04.runB(input)
         case ("5", "a") => day05.runA(input)
+        case ("5", "b") => day05.runB(input)
         case problem => Failure(new Exception("No such puzzle"))
 
     result match
