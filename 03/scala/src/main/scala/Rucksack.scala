@@ -25,3 +25,26 @@ case object CompartmentRucksack:
             val (group1, group2) = items.splitAt(items.length / 2)
             CompartmentRucksack((group1.toVector, group2.toVector))
         }
+
+
+final case class Rucksack(items: Vector[Char]):
+    def intersection(r: Rucksack): Vector[Char] =
+        items.intersect(r.items).distinct
+    
+    def intersection(chars: Vector[Char]): Vector[Char] =
+        items.intersect(chars).distinct
+
+case object Rucksack:
+    def fromLine(line: String): Try[Rucksack] =
+        Try {
+            // Split the line into sequences of characters, each of which represents an item
+            val items = line.split("").map(_.charAt(0))
+            Rucksack(items.toVector)
+        }
+
+
+def charPriority(c: Char): Try[Int] =
+    c match
+        case a if 'a' to 'z' contains a => Success(a.toInt - 96)
+        case a if 'A' to 'Z' contains a => Success(a.toInt - 64 + 26)
+        case _ => Failure(new Exception(s"Invalid character: $c"))

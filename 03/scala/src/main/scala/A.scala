@@ -1,7 +1,6 @@
 package main
 
 import scala.util.{Try, Success, Failure}
-import scala.util.boundary
 
 def runA(input: String): Try[String] =
     val lines = input.split("\n")

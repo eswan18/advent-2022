@@ -16,7 +16,7 @@ import scala.util.{Try, Success, Failure}
 
     val result = args(0) match
         case "a" => runA(input)
-        case "b" => Failure(new Exception("Not implemented"))
+        case "b" => runB(input)
         case problem => Failure(new Exception(s"Unknown problem: $problem"))
     
     result match
