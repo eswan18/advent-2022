@@ -1,7 +1,6 @@
 package main
 
 import scala.util.{Try, Success, Failure}
-import day04._
 
 @main def main(args: String*): Int =
     if args.length != 3 then
@@ -20,6 +19,8 @@ import day04._
         case ("4", "b") => day04.runB(input)
         case ("5", "a") => day05.runA(input)
         case ("5", "b") => day05.runB(input)
+        case ("6", "a") => day06.runA(input)
+        case ("6", "b") => day06.runB(input)
         case problem => Failure(new Exception("No such puzzle"))
 
     result match
