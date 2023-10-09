@@ -22,6 +22,7 @@ import scala.util.{Try, Success, Failure}
         case ("6", "a") => day06.runA(input)
         case ("6", "b") => day06.runB(input)
         case ("7", "a") => day07.runA(input)
+        case ("7", "b") => day07.runB(input)
         case problem => Failure(new Exception("No such puzzle"))
 
     result match

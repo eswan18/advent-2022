@@ -35,6 +35,8 @@ final case class Filesystem(root: Item):
                 case _ => Vector.empty
         loop(root)
     
+    def size: Int = root.size
+    
 object Filesystem:
     def fromCommands(commands: Vector[Command]): Filesystem =
         val fs = Filesystem(Folder("/", Vector.empty))
